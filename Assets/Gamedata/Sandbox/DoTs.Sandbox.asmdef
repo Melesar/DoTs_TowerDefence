@@ -1,0 +1,15 @@
+{
+    "name": "DoTs.Sandbox",
+    "references": [
+        "GUID:913bde8e646ec63439233c4b0ebac4eb"
+    ],
+    "optionalUnityReferences": [],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": []
+}

@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 456fa94f6d5a4cecba977b299a280583, type: 3}
+  m_Name: AnimationDataProvider
+  m_EditorClassIdentifier: 
+  _mesh: {fileID: 10210, guid: 0000000000000000e000000000000000, type: 0}
+  _material: {fileID: 2100000, guid: 884a9306feb079e44a29fcf0a64f840a, type: 2}
+  _uvData:
+    offsetX: 0.65217394
+    offsetY: 0.15384616
+    sizeX: 0.04347826
+    sizeY: 0.07692308
+    stepX: 1
+    stepY: 0
+    frames: 4
+    frameTime: 0.1
+  _sequences:
+  - {fileID: 11400000, guid: f3f793c08d5e9a24ab5d0d7399f0bc0a, type: 2}
