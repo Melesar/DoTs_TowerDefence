@@ -18,43 +18,34 @@ namespace DoTs.Templates
         
         public override Entity CreateEntity(EntityManager entityManager, Vector3 position)
         {
-            Vector3 worldPosition;
-            Sprite sprite;
-            float scale;
             foreach (var wall in _walls)
             {
-                var wallEntity = entityManager.CreateEntity(typeof(Translation), typeof(Scale), typeof(Graphics.Sprite));
-                
-                worldPosition = position + wall.transform.position;
-                scale = wall.transform.localScale.x;
-                entityManager.SetComponentData(wallEntity, new Translation {Value = worldPosition});
-                entityManager.SetComponentData(wallEntity, new Scale {Value = scale});
-
-                sprite = wall.GetComponent<SpriteRenderer>().sprite;
-                entityManager.SetComponentData(wallEntity, new Graphics.Sprite
-                {
-                    matrix = float4x4.TRS(worldPosition, quaternion.identity, scale),
-                    uv = sprite.GetUvRect()
-                });
-                entityManager.SetComponentData(wallEntity, new Scale {Value = _scale});
+                CreateWall(entityManager, position, wall);
             }
 
+            CreateTurret(entityManager, position);
+
+            return entityManager.CreateEntity();
+        }
+
+        private void CreateTurret(EntityManager entityManager, Vector3 position)
+        {
             var turretEntity = entityManager.CreateEntity(GetTurretArchetype(entityManager));
             entityManager.SetName(turretEntity, "Fortress turret");
-            
-            worldPosition = position + _turret.transform.position;
-            scale = _turret.transform.localScale.x;
+
+            var worldPosition = position + _turret.transform.position;
+            var scale = _turret.transform.localScale.x;
             entityManager.SetComponentData(turretEntity, new Translation {Value = worldPosition});
             entityManager.SetComponentData(turretEntity, new Scale {Value = scale});
-            
-            sprite = _turret.GetComponent<SpriteRenderer>().sprite;
+
+            var sprite = _turret.GetComponent<SpriteRenderer>().sprite;
             entityManager.SetComponentData(turretEntity, new Graphics.Sprite
             {
                 matrix = float4x4.TRS(worldPosition, quaternion.identity, scale),
                 uv = sprite.GetUvRect()
             });
 
-            var maxPossibleIdleTime = 3f;
+            const float maxPossibleIdleTime = 3f;
             entityManager.SetComponentData(turretEntity, new TurretRotation
             {
                 maxPossibleIdleTime = maxPossibleIdleTime,
@@ -62,8 +53,30 @@ namespace DoTs.Templates
                 targetAngle = Random.Range(0f, 360f),
                 turnSpeed = 45
             });
+            
+            entityManager.SetComponentData(turretEntity, new TurretAim
+            {
+                aimRange = 10f
+            });
+        }
 
-            return entityManager.CreateEntity();
+        private void CreateWall(EntityManager entityManager, Vector3 position, GameObject wall)
+        {
+            var wallEntity = entityManager.CreateEntity(typeof(Translation), typeof(Scale), typeof(Graphics.Sprite));
+            entityManager.SetName(wallEntity, "Fortress wall");
+
+            var worldPosition = position + wall.transform.position;
+            var scale = wall.transform.localScale.x;
+            entityManager.SetComponentData(wallEntity, new Translation {Value = worldPosition});
+            entityManager.SetComponentData(wallEntity, new Scale {Value = scale});
+
+            var sprite = wall.GetComponent<SpriteRenderer>().sprite;
+            entityManager.SetComponentData(wallEntity, new Graphics.Sprite
+            {
+                matrix = float4x4.TRS(worldPosition, quaternion.identity, scale),
+                uv = sprite.GetUvRect()
+            });
+            entityManager.SetComponentData(wallEntity, new Scale {Value = _scale});
         }
 
         private static EntityArchetype GetTurretArchetype(EntityManager entityManager)
@@ -74,6 +87,7 @@ namespace DoTs.Templates
                 typeof(Scale),
                 typeof(Graphics.Sprite),
                 typeof(TurretRotation),
+                typeof(TurretAim),
                 typeof(Target));
         }
     }

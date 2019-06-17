@@ -9,46 +9,26 @@ using UnityEngine;
 
 namespace DoTs.Graphics
 {
-    public class SpriteAnimationSystem : ComponentSystem
+    public class SpriteAnimationSystem : JobComponentSystem
     {
-        private UVData _uvData;
         private AnimationDataProvider _animationDataProvider;
         private NativeMultiHashMap<AnimationTypeWrapper, float4> _sequenceDataMap;
+        private EntityQuery _query;
 
-        protected override void OnUpdate()
+        protected override JobHandle OnUpdate(JobHandle inputDeps)
         {
-            var query = EntityManager.CreateEntityQuery(typeof(SpriteAnimationData), typeof(Sprite));
-
             var animateJob = new AnimateJob
             {
                 delta = Time.deltaTime,
             };
-
-//            var animationsMap = new NativeMultiHashMap<AnimationTypeWrapper, AnimationDataWrapper>();
-//            var sortingJob = new SortAnimationsByTypesJob
-//            {
-//                map = animationsMap.ToConcurrent()
-//            };
-
             
-
-            //TODO Set animation go free??? Assign readonly attribute to SpriteAnimationData in other jobs
-            var animateJobHandle = animateJob.Schedule(query);
-//            var sortingHandle = sortingJob.Schedule(query, animateJobHandle);
-//            sortingHandle.Complete();
-
+            var animateJobHandle = animateJob.Schedule(_query, inputDeps);
             var assignJob = new AssignUvsJob
             {
                 sequenceMap = _sequenceDataMap
             };
-            assignJob.Schedule(this, animateJobHandle).Complete();
             
-//            var setPropertiesJob = new SetSpriteUvJob
-//            {
-//                uvData = _uvData
-//            };
-//            var setPropertiesHandle = setPropertiesJob.Schedule(query, animateJobHandle);
-//            setPropertiesHandle.Complete();
+            return assignJob.Schedule(this, animateJobHandle);
         }
 
         [BurstCompile]
@@ -69,33 +49,6 @@ namespace DoTs.Graphics
             }
         }
 
-        [BurstCompile]
-        private struct SortAnimationsByTypesJob : IJobForEach<SpriteAnimationData, Sprite>
-        {
-            public NativeMultiHashMap<AnimationTypeWrapper, AnimationDataWrapper>.Concurrent map;
-            
-            public void Execute(ref SpriteAnimationData animationData, ref Sprite sprite)
-            {
-            }
-        }
-
-        [BurstCompile]
-        private struct SetSpriteUvJob : IJobForEach<Sprite, SpriteAnimationData>
-        {
-            public UVData uvData;
-            [ReadOnly, DeallocateOnJobCompletion] 
-            public NativeArray<float4> _uvs;
-            
-            public void Execute(ref Sprite sprite, ref SpriteAnimationData animationData)
-            {
-                var offsetX = uvData.offsetX + animationData.currentFrame * uvData.stepX * uvData.sizeX;
-                var offsetY = uvData.offsetY + animationData.currentFrame * uvData.stepY * uvData.sizeY;
-                var sizeX = uvData.sizeX;
-                var sizeY = uvData.sizeY;
-                sprite.uv = new float4(sizeX, sizeY, offsetX, offsetY);
-            }
-        }
-        
         [BurstCompile]
         private struct AssignUvsJob : IJobForEach<SpriteAnimationData, Sprite>
         {
@@ -128,23 +81,18 @@ namespace DoTs.Graphics
                 }
             }
         }
-        
-        private struct AnimationDataWrapper
-        {
-            public SpriteAnimationData animationData;
-            public Sprite sprite;
-        }
 
         protected override void OnStartRunning()
         {
+            _query = EntityManager.CreateEntityQuery(typeof(SpriteAnimationData), typeof(Sprite));
             _animationDataProvider = ResourceLocator<AnimationDataProvider>.GetResourceProvider();
             _sequenceDataMap = _animationDataProvider.GetSequenceDataMap();
-            _uvData = _animationDataProvider.UvData;
         }
 
         protected override void OnStopRunning()
         {
             _sequenceDataMap.Dispose();
+            _query.Dispose();
         }
     }
 }

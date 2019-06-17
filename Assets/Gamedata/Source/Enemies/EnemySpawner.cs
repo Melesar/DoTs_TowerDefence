@@ -58,7 +58,7 @@ namespace DoTs
                         frameTime = _animationSequence.FrameTime,
                         maxFrame = _animationSequence.TotalFrames
                     });
-                    _entityManager.SetComponentData(enemy, new Movement {speed = 1.5f});
+                    _entityManager.SetComponentData(enemy, new Movement {speed = 0.3f});
                 }
             }
         }

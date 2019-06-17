@@ -17,14 +17,14 @@ namespace DoTs.Graphics
 
         private readonly int _shaderUV = Shader.PropertyToID(UV_PROPERTY_NAME);
         private readonly MaterialPropertyBlock _propertyBlock = new MaterialPropertyBlock();
+        private EntityQuery _query;
 
         private const int DRAW_MESH_BATCH = 1023;
         private const string UV_PROPERTY_NAME = "_MainTex_UV";
         
         protected override void OnUpdate()
         {
-            using(var query = EntityManager.CreateEntityQuery(typeof(Sprite)))
-            using (var spritesArray = query.ToComponentDataArray<Sprite>(Allocator.TempJob))
+            using (var spritesArray = _query.ToComponentDataArray<Sprite>(Allocator.TempJob))
             {
                 var length = spritesArray.Length;
 
@@ -59,6 +59,8 @@ namespace DoTs.Graphics
             var animationDataProvider = ResourceLocator<AnimationDataProvider>.GetResourceProvider();
             _mesh = animationDataProvider.Mesh;
             _material = animationDataProvider.Material;
+            
+            _query = Entities.WithAllReadOnly<Sprite>().ToEntityQuery();
         }
     }
 }
