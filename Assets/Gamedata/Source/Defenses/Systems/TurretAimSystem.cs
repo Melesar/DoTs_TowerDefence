@@ -16,6 +16,7 @@ namespace DoTs
         
         protected override void OnUpdate()
         {
+            _handles.Clear();
             var index = 0;
             Entities.WithAllReadOnly<TurretAim, Translation>()
                 .ForEach((Entity entity, ref TurretAim aim, ref Translation translation) =>
@@ -40,16 +41,20 @@ namespace DoTs
                     enemyPositions = foundEnemies,
                     hasFoundEnemies = hasFoundEnemies,
                 };
-                var rotateTurretsJob = new RotateTowardsTargetJob();
   
                 var handle = findTargetJob.Schedule(this);
                 handle = updateTargetJob.Schedule(handle);
-                handle = rotateTurretsJob.Schedule(this, handle);
 
-                AddHandle(index++, handle);
+                _handles.Add(handle);
             });
             
             JobHandle.CompleteAll(_handles.AsArray());
+            
+            var rotateTurretsJob = new RotateTowardsTargetJob();
+            var outerHandle = rotateTurretsJob.Schedule(this);
+            outerHandle = new UpdateAimStatusJob().Schedule(this, outerHandle);
+            
+            outerHandle.Complete();
         }
 
         [RequireComponentTag(typeof(Enemy))]
@@ -125,16 +130,20 @@ namespace DoTs
                 rotationData.targetAngle = targetQuaternion.eulerAngles.z;
             }
         }
-
-        private void AddHandle(int index, JobHandle handle)
+        
+        
+        [BurstCompile]
+        [RequireComponentTag(typeof(TargetOwnership))]
+        private struct UpdateAimStatusJob : IJobForEach<TurretRotation, TurretAim, Rotation>
         {
-            if (_handles.Length <= index)
+            public void Execute([ReadOnly] ref TurretRotation turretRotation,
+                [WriteOnly] ref TurretAim aim,
+                [ReadOnly] ref Rotation rotation)
             {
-                _handles.Add(handle);
-            }
-            else
-            {
-                _handles[index] = handle;
+                var targetRotation = Quaternion.Euler(0f, 0f, turretRotation.targetAngle);
+                var angle = Quaternion.Angle(targetRotation, rotation.Value);
+
+                aim.isAimed = angle <= 5f;
             }
         }
 
