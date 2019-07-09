@@ -12,6 +12,11 @@ namespace DoTs.ESCBridge
             return _query.ToComponentDataArray<T>(Allocator.Temp);
         }
 
+        public NativeArray<Entity> GetEntities()
+        {
+            return _query.ToEntityArray(Allocator.Temp);
+        }
+
         public EntityQueryComponentProvider(EntityQuery query)
         {
             _query = query;

@@ -14,11 +14,14 @@ namespace DoTs.ObjectPooling
         public UnityObjectPool(T template, int capacity) : base(capacity)
         {
             _template = template;
+            Prepare(capacity);
         }
 
         protected override T SpawnNewObject()
         {
-            return Object.Instantiate(_template);
+            var obj = Object.Instantiate(_template);
+            Reset(obj);
+            return obj;
         }
     }
 }

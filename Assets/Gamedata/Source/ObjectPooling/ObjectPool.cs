@@ -29,7 +29,7 @@ namespace DoTs.ObjectPooling
 
         public void Recycle(T obj)
         {
-            resetAction.Invoke(obj);
+            Reset(obj);
             _buffer.Add(obj);
         }
 
@@ -40,6 +40,11 @@ namespace DoTs.ObjectPooling
                 var obj = SpawnNewObject();
                 _buffer.Add(obj);
             }
+        }
+
+        protected void Reset(T obj)
+        {
+            resetAction.Invoke(obj);
         }
 
         protected abstract T SpawnNewObject();
