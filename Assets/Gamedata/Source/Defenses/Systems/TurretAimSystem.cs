@@ -32,9 +32,11 @@ namespace DoTs
                 };
 
                 var hasTarget = EntityManager.HasComponent<TargetOwnership>(entity);
+                var isAimed = EntityManager.HasComponent<IsAimed>(entity);
                 var updateTargetJob = new UpdateTargetJob
                 {
                     index = index,
+                    isAimed = isAimed,
                     entity = entity,
                     hasTarget = hasTarget,
                     commandBuffer = PostUpdateCommands.ToConcurrent(),
@@ -90,13 +92,15 @@ namespace DoTs
             public int index;
             public Entity entity;
             public bool hasTarget;
+            public bool isAimed;
             public EntityCommandBuffer.Concurrent commandBuffer;
             
             [ReadOnly, DeallocateOnJobCompletion] 
             public NativeArray<float3> enemyPositions;
             [ReadOnly, DeallocateOnJobCompletion] 
             public NativeArray<bool> hasFoundEnemies;
-            
+
+
             public void Execute()
             {
                 if (hasTarget && hasFoundEnemies[0])
@@ -132,18 +136,19 @@ namespace DoTs
         }
         
         
-        [BurstCompile]
         [RequireComponentTag(typeof(TargetOwnership))]
-        private struct UpdateAimStatusJob : IJobForEach<TurretRotation, TurretAim, Rotation>
+        private struct UpdateAimStatusJob : IJobForEachWithEntity<TurretRotation, TurretAim, Rotation>
         {
-            public void Execute([ReadOnly] ref TurretRotation turretRotation,
+            public void Execute(Entity entity, int index,
+                [ReadOnly] ref TurretRotation turretRotation,
                 [WriteOnly] ref TurretAim aim,
                 [ReadOnly] ref Rotation rotation)
             {
                 var targetRotation = Quaternion.Euler(0f, 0f, turretRotation.targetAngle);
                 var angle = Quaternion.Angle(targetRotation, rotation.Value);
 
-                aim.isAimed = angle <= 5f;
+                var isAimed = angle <= 5f;
+                aim.isAimed = isAimed;
             }
         }
 

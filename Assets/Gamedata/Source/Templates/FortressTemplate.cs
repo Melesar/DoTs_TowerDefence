@@ -58,6 +58,12 @@ namespace DoTs.Templates
             {
                 aimRange = 10f
             });
+            
+            entityManager.SetComponentData(turretEntity, new TurretShooting
+            {
+                currentCooldownTime = 0f,
+                totalCooldownTime = 3f
+            });
         }
 
         private void CreateWall(EntityManager entityManager, Vector3 position, GameObject wall)
@@ -88,6 +94,7 @@ namespace DoTs.Templates
                 typeof(Graphics.Sprite),
                 typeof(TurretRotation),
                 typeof(TurretAim),
+                typeof(TurretShooting),
                 typeof(Target));
         }
     }
