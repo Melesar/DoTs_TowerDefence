@@ -125,7 +125,7 @@ namespace DoTs
             _shellTemplate.shellData = new ExplosiveShell
             {
                 explosionDamage = 50f,
-                explosionRadius = 10f,
+                explosionRadius = 2.5f,
                 lifetime = 1.2f
             };
 

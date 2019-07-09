@@ -68,7 +68,7 @@ namespace DoTs.Templates
 
         private void CreateWall(EntityManager entityManager, Vector3 position, GameObject wall)
         {
-            var wallEntity = entityManager.CreateEntity(typeof(Translation), typeof(Scale), typeof(Graphics.Sprite));
+            var wallEntity = entityManager.CreateEntity(GetWallArchetype(entityManager));
             entityManager.SetName(wallEntity, "Fortress wall");
 
             var worldPosition = position + wall.transform.position;
@@ -83,6 +83,7 @@ namespace DoTs.Templates
                 uv = sprite.GetUvRect()
             });
             entityManager.SetComponentData(wallEntity, new Scale {Value = _scale});
+            entityManager.SetComponentData(wallEntity, new Health{value = 35f});
         }
 
         private static EntityArchetype GetTurretArchetype(EntityManager entityManager)
@@ -96,6 +97,16 @@ namespace DoTs.Templates
                 typeof(TurretAim),
                 typeof(TurretShooting),
                 typeof(Target));
+        }
+
+        private static EntityArchetype GetWallArchetype(EntityManager entityManager)
+        {
+            return entityManager.CreateArchetype(
+                typeof(Translation),
+                typeof(Scale),
+                typeof(Graphics.Sprite),
+                typeof(Health)
+            );
         }
     }
 }
