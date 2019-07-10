@@ -29,7 +29,8 @@ namespace DoTs.Graphics
         {
             using (var spritesArray = _query.ToComponentDataArray<Sprite>(Allocator.TempJob))
             {
-                ScheduleSpriteSorting(spritesArray).Complete();
+                spritesArray.QuickSort();
+//                ScheduleSpriteSorting(spritesArray).Complete();
                 
                 var length = spritesArray.Length;
 

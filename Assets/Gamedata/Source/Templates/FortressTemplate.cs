@@ -88,7 +88,11 @@ namespace DoTs.Templates
                 sortingOrder = 1
             });
             entityManager.SetComponentData(wallEntity, new Scale {Value = _scale});
-            entityManager.SetComponentData(wallEntity, new Health{value = 35f});
+            entityManager.SetComponentData(wallEntity, new Health
+            {
+                value = 35f,
+                maxValue = 35f,
+            });
         }
 
         private static EntityArchetype GetTurretArchetype(EntityManager entityManager)

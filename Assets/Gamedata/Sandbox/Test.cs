@@ -1,36 +1,50 @@
+using System;
 using UnityEngine;
 using Unity.Mathematics;
+using Random = UnityEngine.Random;
 
 namespace DoTs.Sandbox
 {
     public class Test : MonoBehaviour
     {
-        public float targetAngle;
-        public float idleTime;
-        public bool isRotating;
+        private const int COUNT = 100;
 
-        public float turnSpeed = 45f;
-
-        public Transform target;
+        [SerializeField]
+        private Material _material;
+        [SerializeField]
+        private Mesh _mesh;
+        
+        private MaterialPropertyBlock _block;
+        private Matrix4x4[] _matrices;
+        private Vector4[] _colors;
+        private float[] _fillValues;
 
         private void Update()
         {
-            CalculateRotation();
-            
-            var currentRotation = transform.rotation;
-            var targetRotation = Quaternion.Euler(0f, 0f, targetAngle);
-
-            var rotationDelta = turnSpeed * Time.deltaTime;
-            transform.rotation = Quaternion.RotateTowards(currentRotation, targetRotation, rotationDelta);
+            UnityEngine.Graphics.DrawMeshInstanced(
+                _mesh,
+                0,
+                _material,
+                _matrices,
+                COUNT,
+                _block
+            );
         }
 
-        private void CalculateRotation()
+        private void Start()
         {
-            var to = target.position - transform.position;
-            var from = math.up();
-            var targetQuaternion = Quaternion.FromToRotation(from, to);
+            _block = new MaterialPropertyBlock();
 
-            targetAngle = targetQuaternion.eulerAngles.z;
+            _matrices = new Matrix4x4[COUNT];
+            _fillValues = new float[COUNT];
+            for (int i = 0; i < COUNT; i++)
+            {
+                var position = new Vector3(Random.Range(0, 10), Random.Range(0, 10), 0f);
+                _matrices[i] = Matrix4x4.TRS(position, Quaternion.identity, Vector3.one);
+                _fillValues[i] = Random.value;
+            }
+
+            _block.SetFloatArray("_Fill", _fillValues);
         }
     }
 }

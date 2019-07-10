@@ -1,9 +1,11 @@
-﻿Shader "SimplestInstancedShader"
+﻿Shader "ColorInstanced"
 {
     Properties
     {
         _MainTex("Texture", 2D) = "white" {}
-        _Color ("Color", Color) = (1, 1, 1, 1)
+        _ColorZero("Color zero health", Color) = (1, 0, 0, 1)
+        _ColorFull("Color full health", Color) = (0, 1, 0, 1)
+        [PerRendererData]_Fill ("Fill", float) = 1
     }
 
     SubShader
@@ -35,10 +37,11 @@
             };
             
             sampler2D _MainTex;
-//            float4 _MainTex_UV;
+            fixed4 _ColorZero;
+            fixed4 _ColorFull;
 
             UNITY_INSTANCING_BUFFER_START(Props)
-                UNITY_DEFINE_INSTANCED_PROP(fixed4, _Color)
+                UNITY_DEFINE_INSTANCED_PROP(float, _Fill)
                 UNITY_DEFINE_INSTANCED_PROP(fixed4, _MainTex_UV)
             UNITY_INSTANCING_BUFFER_END(Props)
            
@@ -50,14 +53,20 @@
                 UNITY_TRANSFER_INSTANCE_ID(v, o); // necessary only if you want to access instanced properties in the fragment Shader.
 
                 o.vertex = UnityObjectToClipPos(v.vertex);
-                o.uv = (v.uv * UNITY_ACCESS_INSTANCED_PROP(Props, _MainTex_UV).xy) + UNITY_ACCESS_INSTANCED_PROP(Props, _MainTex_UV).zw; 
+                o.uv = v.uv; 
                 return o;
             }
            
             fixed4 frag(v2f i) : SV_Target
             {
                 UNITY_SETUP_INSTANCE_ID(i); // necessary only if any instanced properties are going to be accessed in the fragment Shader.
-                return tex2D(_MainTex, i.uv);
+                
+                float fill = UNITY_ACCESS_INSTANCED_PROP(Props, _Fill);
+                fixed4 color = lerp(_ColorZero, _ColorFull, fill);
+                color = tex2D(_MainTex, i.uv) * color;
+                color.a = i.uv.x > fill ? 0 : 1;
+                
+                return color;
             }
             ENDCG
         }

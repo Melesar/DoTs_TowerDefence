@@ -65,7 +65,11 @@ namespace DoTs
                         maxFrame = _animationSequence.TotalFrames
                     });
                     _entityManager.SetComponentData(enemy, new Movement {speed = 0.3f});
-                    _entityManager.SetComponentData(enemy, new Health {value = 8f});
+                    _entityManager.SetComponentData(enemy, new Health
+                    {
+                        value = 8f,
+                        maxValue = 8f,
+                    });
                 }
             }
         }

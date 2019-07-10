@@ -11,13 +11,16 @@ namespace DoTs.UI
         private EndInitializationEntityCommandBufferSystem _cbSystem;
 
         [ExcludeComponent(typeof(UIHealthBar))]
-        [RequireComponentTag(typeof(Health))]
-        private struct UpdateUIDataJob : IJobForEachWithEntity<Scale>
+        private struct UpdateUIDataJob : IJobForEachWithEntity<Scale, Health>
         {
             public EntityCommandBuffer.Concurrent commands;
             
-            public void Execute(Entity entity, int index, [ReadOnly]ref Scale scale)
+            public void Execute(Entity entity, int index, [ReadOnly]ref Scale scale, [ReadOnly] ref Health health)
             {
+//                if (health.value >= health.maxValue)
+//                {
+//                    return;
+//                }
                 var healthBar = new UIHealthBar
                 {
                     offsetY = 0.8f,
