@@ -1,6 +1,9 @@
 using DoTs.Resources;
+using DoTs.Utilites;
+using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
+using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
 
@@ -26,6 +29,8 @@ namespace DoTs.Graphics
         {
             using (var spritesArray = _query.ToComponentDataArray<Sprite>(Allocator.TempJob))
             {
+                ScheduleSpriteSorting(spritesArray).Complete();
+                
                 var length = spritesArray.Length;
 
                 for (var i = 0; i < length; i += DRAW_MESH_BATCH)
@@ -50,6 +55,24 @@ namespace DoTs.Graphics
                 }
             }
         }
+
+        private JobHandle ScheduleSpriteSorting(NativeArray<Sprite> sprites)
+        {
+            return new SpriteSortingJob {inSprites = sprites}.Schedule();
+        }
+        
+        
+        [BurstCompile]
+        private struct SpriteSortingJob : IJob
+        {
+            public NativeArray<Sprite> inSprites;
+            
+            public void Execute()
+            {
+                inSprites.QuickSort();
+            }
+        }
+        
 
         protected override void OnStartRunning()
         {

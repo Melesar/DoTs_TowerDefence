@@ -6,6 +6,8 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
+using SortingLayer = DoTs.Graphics.SortingLayer;
+using Sprite = UnityEngine.Sprite;
 
 namespace DoTs
 {
@@ -70,6 +72,7 @@ namespace DoTs
                 commandBuffer.SetComponent(entity, new Scale {Value = 4f});
                 commandBuffer.SetComponent(entity, shellTemplate.shellData);
                 commandBuffer.SetComponent(entity, shellTemplate.animationData);
+                commandBuffer.SetComponent(entity, shellTemplate.spriteData);
             }
         }
 
@@ -102,6 +105,7 @@ namespace DoTs
         {
             public ExplosiveShell shellData;
             public SpriteAnimationData animationData;
+            public Graphics.Sprite spriteData;
         }
 
         protected override void OnCreate()
@@ -137,8 +141,12 @@ namespace DoTs
                 maxFrame = 6,
                 entityType = AnimationEntityType.TurretExplosion
             };
-            
-            
+
+            _shellTemplate.spriteData = new Graphics.Sprite
+            {
+                sortingLayer = SortingLayer.Units,
+                sortingOrder = 10
+            };
         }
     }
 }

@@ -25,3 +25,4 @@ MonoBehaviour:
     frameTime: 0.1
   _sequences:
   - {fileID: 11400000, guid: f3f793c08d5e9a24ab5d0d7399f0bc0a, type: 2}
+  - {fileID: 11400000, guid: 3aa3339eb359982478f31f8fd896346b, type: 2}

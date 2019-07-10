@@ -8,6 +8,7 @@ using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
 using Random = UnityEngine.Random;
+using SortingLayer = DoTs.Graphics.SortingLayer;
 
 namespace DoTs
 {
@@ -50,6 +51,11 @@ namespace DoTs
                     _entityManager.SetComponentData(enemy, new Translation {Value = position});
                     _entityManager.SetComponentData(enemy, new Rotation{Value = quaternion.identity});
                     _entityManager.SetComponentData(enemy, new Scale {Value = 1f});
+                    _entityManager.SetComponentData(enemy, new Graphics.Sprite
+                    {
+                        sortingLayer = SortingLayer.Units,
+                        sortingOrder = 0
+                    });
                     _entityManager.SetComponentData(enemy, new SpriteAnimationData
                     {
                         entityType = AnimationEntityType.Enemy,

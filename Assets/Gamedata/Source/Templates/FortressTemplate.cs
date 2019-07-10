@@ -4,6 +4,7 @@ using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
 using Random = UnityEngine.Random;
+using SortingLayer = DoTs.Graphics.SortingLayer;
 
 namespace DoTs.Templates
 {
@@ -42,7 +43,9 @@ namespace DoTs.Templates
             entityManager.SetComponentData(turretEntity, new Graphics.Sprite
             {
                 matrix = float4x4.TRS(worldPosition, quaternion.identity, scale),
-                uv = sprite.GetUvRect()
+                uv = sprite.GetUvRect(),
+                sortingLayer = SortingLayer.Buildings,
+                sortingOrder = 10
             });
 
             const float maxPossibleIdleTime = 3f;
@@ -80,7 +83,9 @@ namespace DoTs.Templates
             entityManager.SetComponentData(wallEntity, new Graphics.Sprite
             {
                 matrix = float4x4.TRS(worldPosition, quaternion.identity, scale),
-                uv = sprite.GetUvRect()
+                uv = sprite.GetUvRect(),
+                sortingLayer = SortingLayer.Buildings,
+                sortingOrder = 1
             });
             entityManager.SetComponentData(wallEntity, new Scale {Value = _scale});
             entityManager.SetComponentData(wallEntity, new Health{value = 35f});
