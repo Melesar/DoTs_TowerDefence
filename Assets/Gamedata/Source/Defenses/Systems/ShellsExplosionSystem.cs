@@ -8,6 +8,7 @@ using UnityEngine;
 
 namespace DoTs
 {
+    [UpdateInGroup(typeof(TurretsSystemGroup))]
     [UpdateAfter(typeof(TurretShootingSystem))]
     public class ShellsExplosionSystem : JobComponentSystem
     {
@@ -65,19 +66,11 @@ namespace DoTs
 
         private struct ShellDisposeJob : IJobForEachWithEntity<ExplosiveShell>
         {
-            public float deltaTime;
             public EntityCommandBuffer.Concurrent commandBuffer;
             
             public void Execute(Entity entity, int index, ref ExplosiveShell shell)
             {
-                if (shell.lifetime > 0.01f)
-                {
-                    shell.lifetime -= deltaTime;
-                }
-                else
-                {
-                    commandBuffer.DestroyEntity(index, entity);
-                }
+                commandBuffer.DestroyEntity(index, entity);
             }
         }
 
@@ -104,7 +97,6 @@ namespace DoTs
             var commandBuffer = _commandBufferSystem.CreateCommandBuffer();
             var shellDisposalJob = new ShellDisposeJob
             {
-                deltaTime = Time.deltaTime,
                 commandBuffer = commandBuffer.ToConcurrent()
             };
 

@@ -11,10 +11,12 @@ using Sprite = UnityEngine.Sprite;
 
 namespace DoTs
 {
+    [UpdateInGroup(typeof(TurretsSystemGroup))]
     [UpdateAfter(typeof(TurretRotationSystem))]
     public class TurretShootingSystem : ComponentSystem
     {
         private EntityArchetype _shellArchetype;
+        private EntityArchetype _shellExplosionArchetype;
         private ShellData _shellTemplate;
         private EndSimulationEntityCommandBufferSystem _commandBufferSystem;
 
@@ -53,6 +55,7 @@ namespace DoTs
             public NativeHashMap<int, float3> shellPositions;
             public EntityCommandBuffer commandBuffer;
             public EntityArchetype shellArchetype;
+            public EntityArchetype shellExplosionArchetype;
             public ShellData shellTemplate;
             
             public void Execute()
@@ -66,13 +69,18 @@ namespace DoTs
 
             private void SpawnExplosion(float3 position)
             {
-                var entity = commandBuffer.CreateEntity(shellArchetype);
-                commandBuffer.SetComponent(entity, new Translation{Value = position});
-                commandBuffer.SetComponent(entity, new Rotation{Value = quaternion.identity});
-                commandBuffer.SetComponent(entity, new Scale {Value = 4f});
-                commandBuffer.SetComponent(entity, shellTemplate.shellData);
-                commandBuffer.SetComponent(entity, shellTemplate.animationData);
-                commandBuffer.SetComponent(entity, shellTemplate.spriteData);
+                var shell = commandBuffer.CreateEntity(shellArchetype);
+                commandBuffer.SetComponent(shell, new Translation{Value = position});
+                commandBuffer.SetComponent(shell, shellTemplate.shellData);
+                
+
+                var explosion = commandBuffer.CreateEntity(shellExplosionArchetype);
+                commandBuffer.SetComponent(explosion, new Translation{Value = position});
+                commandBuffer.SetComponent(explosion, new Rotation{Value = quaternion.identity});
+                commandBuffer.SetComponent(explosion, new Scale {Value = 4f});
+                commandBuffer.SetComponent(explosion, new Lifetime {value = 1.2f});
+                commandBuffer.SetComponent(explosion, shellTemplate.animationData);
+                commandBuffer.SetComponent(explosion, shellTemplate.spriteData);
             }
         }
 
@@ -90,6 +98,7 @@ namespace DoTs
                 shellPositions = shellsQueue,
                 commandBuffer = _commandBufferSystem.CreateCommandBuffer(),
                 shellArchetype = _shellArchetype,
+                shellExplosionArchetype = _shellExplosionArchetype,
                 shellTemplate = _shellTemplate
             };
 
@@ -116,11 +125,16 @@ namespace DoTs
 
             _shellArchetype = EntityManager.CreateArchetype(
                 typeof(Translation),
+                typeof(ExplosiveShell)
+            );
+
+            _shellExplosionArchetype = EntityManager.CreateArchetype(
+                typeof(Translation),
                 typeof(Rotation),
                 typeof(Scale),
-                typeof(ExplosiveShell),
                 typeof(DoTs.Graphics.Sprite),
-                typeof(SpriteAnimationData)
+                typeof(SpriteAnimationData),
+                typeof(Lifetime)
             );
         }
 
@@ -128,9 +142,8 @@ namespace DoTs
         {
             _shellTemplate.shellData = new ExplosiveShell
             {
-                explosionDamage = 50f,
+                explosionDamage = 3f,
                 explosionRadius = 2.5f,
-                lifetime = 1.2f
             };
 
             _shellTemplate.animationData = new SpriteAnimationData

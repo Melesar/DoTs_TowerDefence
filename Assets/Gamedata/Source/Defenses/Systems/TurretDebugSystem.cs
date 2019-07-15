@@ -5,6 +5,7 @@ using UnityEngine;
 
 namespace DoTs
 {
+    [UpdateInGroup(typeof(TurretsSystemGroup))]
     public class TurretDebugSystem : ComponentSystem
     {
         protected override void OnUpdate()

@@ -9,6 +9,7 @@ using Random = UnityEngine.Random;
 
 namespace DoTs
 {
+    [UpdateInGroup(typeof(TurretsSystemGroup))]
     public class TurretRotationSystem : JobComponentSystem
     {
         private const float ROTATION_EPSILON = 3f;

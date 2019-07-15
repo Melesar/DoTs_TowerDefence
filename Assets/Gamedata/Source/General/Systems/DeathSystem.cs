@@ -2,6 +2,7 @@ using Unity.Entities;
 
 namespace DoTs
 {
+    [UpdateBefore(typeof(EndSimulationEntityCommandBufferSystem))]
     public class DeathSystem : ComponentSystem
     {
         protected override void OnUpdate()

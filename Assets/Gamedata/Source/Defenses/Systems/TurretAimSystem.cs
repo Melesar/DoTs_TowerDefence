@@ -9,6 +9,7 @@ using UnityEngine;
 
 namespace DoTs
 {
+    [UpdateInGroup(typeof(TurretsSystemGroup))]
     [UpdateBefore(typeof(TurretRotationSystem))]
     public class TurretAimSystem : ComponentSystem
     {
@@ -32,18 +33,16 @@ namespace DoTs
                 };
 
                 var hasTarget = EntityManager.HasComponent<TargetOwnership>(entity);
-                var isAimed = EntityManager.HasComponent<IsAimed>(entity);
                 var updateTargetJob = new UpdateTargetJob
                 {
                     index = index,
-                    isAimed = isAimed,
                     entity = entity,
                     hasTarget = hasTarget,
                     commandBuffer = PostUpdateCommands.ToConcurrent(),
                     enemyPositions = foundEnemies,
                     hasFoundEnemies = hasFoundEnemies,
                 };
-  
+
                 var handle = findTargetJob.Schedule(this);
                 handle = updateTargetJob.Schedule(handle);
 
@@ -65,14 +64,15 @@ namespace DoTs
         {
             public float3 turretPosition;
             public float aimRange;
+            
+            [NativeDisableParallelForRestriction]
             public NativeArray<float3> foundEnemies;
+            [NativeDisableParallelForRestriction]
             public NativeArray<bool> indicator;
-
-            private bool _hasFoundTarget;
             
             public void Execute(Entity entity, int entityIndex, [ReadOnly] ref Translation position)
             {
-                if (_hasFoundTarget)
+                if (indicator[0])
                 {
                     return;
                 }
@@ -82,7 +82,6 @@ namespace DoTs
                 {
                     foundEnemies[0] = position.Value;
                     indicator[0] = true;
-                    _hasFoundTarget = true;
                 }
             }
         }
@@ -92,7 +91,6 @@ namespace DoTs
             public int index;
             public Entity entity;
             public bool hasTarget;
-            public bool isAimed;
             public EntityCommandBuffer.Concurrent commandBuffer;
             
             [ReadOnly, DeallocateOnJobCompletion] 

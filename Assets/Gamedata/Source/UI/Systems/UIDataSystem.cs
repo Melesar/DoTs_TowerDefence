@@ -17,10 +17,10 @@ namespace DoTs.UI
             
             public void Execute(Entity entity, int index, [ReadOnly]ref Scale scale, [ReadOnly] ref Health health)
             {
-//                if (health.value >= health.maxValue)
-//                {
-//                    return;
-//                }
+                if (health.value >= health.maxValue)
+                {
+                    return;
+                }
                 var healthBar = new UIHealthBar
                 {
                     offsetY = 0.8f,

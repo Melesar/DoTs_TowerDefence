@@ -6,7 +6,5 @@ namespace DoTs
     {
         public float explosionRadius;
         public float explosionDamage;
-
-        public float lifetime;
     }
 }
