@@ -1,3 +1,4 @@
+using DoTs.Physics;
 using DoTs.Utilites;
 using Unity.Entities;
 using Unity.Mathematics;
@@ -67,6 +68,8 @@ namespace DoTs.Templates
                 currentCooldownTime = 0f,
                 totalCooldownTime = 3f
             });
+            
+            entityManager.SetComponentData(turretEntity, new AABB {extents = 0.45f});
         }
 
         private void CreateWall(EntityManager entityManager, Vector3 position, GameObject wall)
@@ -93,6 +96,7 @@ namespace DoTs.Templates
                 value = 35f,
                 maxValue = 35f,
             });
+            entityManager.SetComponentData(wallEntity, new AABB {extents = 0.4f});
         }
 
         private static EntityArchetype GetTurretArchetype(EntityManager entityManager)
@@ -105,7 +109,10 @@ namespace DoTs.Templates
                 typeof(TurretRotation),
                 typeof(TurretAim),
                 typeof(TurretShooting),
-                typeof(Target));
+                typeof(Target),
+                typeof(AABB),
+                typeof(PhysicsStatic)
+                );
         }
 
         private static EntityArchetype GetWallArchetype(EntityManager entityManager)
@@ -114,7 +121,9 @@ namespace DoTs.Templates
                 typeof(Translation),
                 typeof(Scale),
                 typeof(Graphics.Sprite),
-                typeof(Health)
+                typeof(Health),
+                typeof(AABB),
+                typeof(PhysicsStatic)
             );
         }
     }

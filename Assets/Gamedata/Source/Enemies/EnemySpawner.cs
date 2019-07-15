@@ -1,5 +1,6 @@
 using System;
 using DoTs.Graphics;
+using DoTs.Physics;
 using DoTs.Resources;
 using DoTs.Utilites;
 using Unity.Collections;
@@ -70,6 +71,7 @@ namespace DoTs
                         value = 8f,
                         maxValue = 8f,
                     });
+                    _entityManager.SetComponentData(enemy, new AABB{extents = 0.15f});
                 }
             }
         }
@@ -92,7 +94,8 @@ namespace DoTs
                 typeof(Graphics.Sprite),
                 typeof(SpriteAnimationData),
                 typeof(Movement),
-                typeof(Health)
+                typeof(Health),
+                typeof(AABB)
             );
         }
     }

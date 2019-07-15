@@ -84,7 +84,7 @@ namespace DoTs.Graphics
 
         protected override void OnStartRunning()
         {
-            _query = EntityManager.CreateEntityQuery(typeof(SpriteAnimationData), typeof(Sprite));
+            _query = EntityManager.CreateEntityQuery(typeof(SpriteAnimationData));
             _animationDataProvider = ResourceLocator<AnimationDataProvider>.GetResourceProvider();
             _sequenceDataMap = _animationDataProvider.GetSequenceDataMap();
         }
