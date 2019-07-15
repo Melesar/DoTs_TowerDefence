@@ -65,7 +65,6 @@ namespace DoTs
                         frameTime = _animationSequence.FrameTime,
                         maxFrame = _animationSequence.TotalFrames
                     });
-                    _entityManager.SetComponentData(enemy, new Movement {speed = 0.3f});
                     _entityManager.SetComponentData(enemy, new Health
                     {
                         value = 8f,
@@ -93,9 +92,9 @@ namespace DoTs
                 typeof(Scale),
                 typeof(Graphics.Sprite),
                 typeof(SpriteAnimationData),
-                typeof(Movement),
                 typeof(Health),
-                typeof(AABB)
+                typeof(AABB),
+                typeof(AIAgent)
             );
         }
     }

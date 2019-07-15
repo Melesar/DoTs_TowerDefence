@@ -8,5 +8,10 @@ namespace DoTs.Physics
         public Entity entity;
         public float distance;
         public float3 position;
+
+        public bool IsHit()
+        {
+            return distance >= 0f;
+        }
     }
 }

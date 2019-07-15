@@ -37,8 +37,7 @@ namespace DoTs.Physics
                 var bounds = new Bounds(position, size);
                 var ray = new Ray(origin, direction);
 
-                bounds.IntersectRay(ray, out var distance);
-                outDistances[index] = distance;
+                outDistances[index] = bounds.IntersectRay(ray, out var distance) ? distance : float.NegativeInfinity;
             }
         }
         
@@ -61,7 +60,7 @@ namespace DoTs.Physics
                 for (int i = 0; i < distances.Length; i++)
                 {
                     var distance = distances[i];
-                    if (distance < minDistance)
+                    if (distance >= 0 && distance < minDistance)
                     {
                         minDistance = distance;
                         minIndex = i;
