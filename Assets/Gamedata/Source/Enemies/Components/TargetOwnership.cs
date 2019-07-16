@@ -6,5 +6,6 @@ namespace DoTs
     public struct TargetOwnership : IComponentData
     {
         public float3 targetPosition;
+        public Entity targetEntity;
     }
 }

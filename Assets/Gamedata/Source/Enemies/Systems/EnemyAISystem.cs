@@ -14,7 +14,7 @@ namespace DoTs
         private readonly Movement _enemyMovement = new Movement {speed = 0.3f};
         private readonly EnemyAttack _enemyAttack = new EnemyAttack
         {
-            range = 1f,
+            range = 0.5f,
             cooldown = 1f,
             damage = 3f,
         };
@@ -37,6 +37,11 @@ namespace DoTs
                 if (raycastResult.IsHit() && raycastResult.distance <= _enemyAttack.range)
                 {
                     RemoveComponent<Movement>(enemyEntity);
+                    UpdateComponent(enemyEntity, new TargetOwnership
+                    {
+                        targetEntity = raycastResult.entity,
+                        targetPosition = raycastResult.position
+                    });
                     UpdateComponent(enemyEntity, _enemyAttack);
                 }
                 else

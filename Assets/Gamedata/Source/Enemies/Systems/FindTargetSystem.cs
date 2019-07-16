@@ -9,10 +9,30 @@ namespace DoTs
 {
     public class FindTargetSystem : ComponentSystem
     {
+        private EntityQuery _targetsQuery;
+
+        private struct AssignTargetJob : IJobParallelFor
+        {
+            [DeallocateOnJobCompletion]public NativeArray<Entity> enemies;
+            public float3 targetPosition;
+            public Entity targetEntity;
+            public EntityCommandBuffer.Concurrent commandBuffer;
+
+            public void Execute(int index)
+            {
+                var enemy = enemies[index];
+                commandBuffer.AddComponent(index, enemy, new TargetOwnership
+                {
+                    targetPosition = targetPosition,
+                    targetEntity = targetEntity
+                });
+            }
+        }
+
         protected override void OnUpdate()
         {
-            var targetsQuery = EntityManager.CreateEntityQuery(typeof(Target), typeof(Translation));
-            var target = targetsQuery.GetSingleton<Translation>().Value;
+            var target = _targetsQuery.GetSingletonEntity();
+            var targetPosition = _targetsQuery.GetSingleton<Translation>().Value;
 
             var commandBuffer = PostUpdateCommands.ToConcurrent();
             var enemies = Entities
@@ -24,24 +44,17 @@ namespace DoTs
             var assignJob = new AssignTargetJob
             {
                 enemies = enemies,
-                targetPosition = target,
+                targetPosition = targetPosition,
+                targetEntity = target,
                 commandBuffer = commandBuffer
             };
 
             assignJob.Schedule(enemies.Length, 32).Complete();
         }
 
-        private struct AssignTargetJob : IJobParallelFor
+        protected override void OnCreate()
         {
-            [DeallocateOnJobCompletion]public NativeArray<Entity> enemies;
-            public float3 targetPosition;
-            public EntityCommandBuffer.Concurrent commandBuffer;
-
-            public void Execute(int index)
-            {
-                var enemy = enemies[index];
-                commandBuffer.AddComponent(index, enemy, new TargetOwnership {targetPosition = targetPosition});
-            }
+            _targetsQuery = EntityManager.CreateEntityQuery(typeof(Target), typeof(Translation));
         }
     }
 }

@@ -69,9 +69,9 @@ namespace DoTs.Physics
 
                 outResult[0] = new RaycastResult
                 {
-                    entity = entities[minIndex],
-                    distance = minDistance,
-                    position = positions[minIndex].Value
+                    entity = minIndex >= 0 ? entities[minIndex] : Entity.Null,
+                    distance = minIndex >= 0 ? minDistance : float.NegativeInfinity,
+                    position = minIndex >= 0 ? positions[minIndex].Value : float3.zero
                 };
             }
         }

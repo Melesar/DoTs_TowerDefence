@@ -7,5 +7,6 @@ namespace DoTs
         public float range;
         public float damage;
         public float cooldown;
+        public float currentCooldown;
     }
 }
