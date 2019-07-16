@@ -30,8 +30,6 @@ namespace DoTs.Physics
                         var center = translation.Value;
                         var extents = aabb.extents * scale.Value;
 
-//                        Debug.Log($"{EntityManager.GetName(e)}: {scale.Value}");
-                        
                         DrawAABB(center, extents, Color.red);
                     });
         }

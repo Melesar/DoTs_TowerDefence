@@ -33,7 +33,7 @@ namespace DoTs
                 var direction = targetPosition - enemyPosition;
 
                 var enemyEntity = entities[i];
-                var raycastResult = _raycastProvider.Raycast(enemyPosition, direction);
+                var raycastResult = _raycastProvider.Raycast(enemyPosition, direction, LayerMask.Create(Layer.Building));
                 if (raycastResult.IsHit() && raycastResult.distance <= _enemyAttack.range)
                 {
                     RemoveComponent<Movement>(enemyEntity);
