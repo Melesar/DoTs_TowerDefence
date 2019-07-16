@@ -70,6 +70,7 @@ namespace DoTs.Templates
             });
             
             entityManager.SetComponentData(turretEntity, new AABB {extents = 0.45f});
+            entityManager.SetComponentData(turretEntity, LayerMask.Create(Layer.Building));
         }
 
         private void CreateWall(EntityManager entityManager, Vector3 position, GameObject wall)
@@ -97,6 +98,7 @@ namespace DoTs.Templates
                 maxValue = 35f,
             });
             entityManager.SetComponentData(wallEntity, new AABB {extents = 0.4f});
+            entityManager.SetComponentData(wallEntity, LayerMask.Create(Layer.Building));
         }
 
         private static EntityArchetype GetTurretArchetype(EntityManager entityManager)
@@ -111,7 +113,8 @@ namespace DoTs.Templates
                 typeof(TurretShooting),
                 typeof(Target),
                 typeof(AABB),
-                typeof(PhysicsStatic)
+                typeof(PhysicsStatic),
+                typeof(LayerMask)
                 );
         }
 
@@ -123,7 +126,8 @@ namespace DoTs.Templates
                 typeof(Graphics.Sprite),
                 typeof(Health),
                 typeof(AABB),
-                typeof(PhysicsStatic)
+                typeof(PhysicsStatic),
+                typeof(LayerMask)
             );
         }
     }

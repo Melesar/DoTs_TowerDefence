@@ -1,4 +1,5 @@
 using DoTs.Resources;
+using DoTs.Utilites;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
@@ -19,11 +20,14 @@ namespace DoTs.Physics
         {
             public float3 origin;
             public float3 direction;
-            
+            public LayerMask targetMask;
+
             [ReadOnly, DeallocateOnJobCompletion]
             public NativeArray<AABB> aabbs;
             [ReadOnly, DeallocateOnJobCompletion]
             public NativeArray<Scale> scales;
+            [ReadOnly, DeallocateOnJobCompletion]
+            public NativeArray<LayerMask> layers;
 
             [ReadOnly]
             public NativeArray<Translation> positions;
@@ -32,6 +36,12 @@ namespace DoTs.Physics
             
             public void Execute(int index)
             {
+                if (!ValidateLayer(index))
+                {
+                    outDistances[index] = float.NegativeInfinity;
+                    return;
+                }
+                
                 var position = positions[index].Value;
                 var size = scales[index].Value * 2f * aabbs[index].extents;
                 var bounds = new Bounds(position, size);
@@ -39,8 +49,14 @@ namespace DoTs.Physics
 
                 outDistances[index] = bounds.IntersectRay(ray, out var distance) ? distance : float.NegativeInfinity;
             }
+
+            private bool ValidateLayer(int index)
+            {
+                var targetLayer = targetMask.ToLayer();
+                return layers[index].HasLayer(targetLayer);
+            }
         }
-        
+
         [BurstCompile]
         private struct RaycastResultJob : IJob
         {
@@ -75,15 +91,21 @@ namespace DoTs.Physics
                 };
             }
         }
-        
+
         public RaycastResult Raycast(float3 origin, float3 direction)
+        {
+            return Raycast(origin, direction, LayerMask.Create(Layer.Default));
+        }
+
+        public RaycastResult Raycast(float3 origin, float3 direction, LayerMask layerMask)
         {
             var count = _query.CalculateLength();
             var aabbs = _query.ToComponentDataArray<AABB>(Allocator.TempJob);
             var positions = _query.ToComponentDataArray<Translation>(Allocator.TempJob);
             var scales = _query.ToComponentDataArray<Scale>(Allocator.TempJob);
+            var layers = _query.ToComponentDataArray<LayerMask>(Allocator.TempJob);
             var entities = _query.ToEntityArray(Allocator.TempJob);
-            
+
             var distances = new NativeArray<float>(count, Allocator.TempJob);
             var results = new NativeArray<RaycastResult>(1, Allocator.TempJob);
 
@@ -91,9 +113,11 @@ namespace DoTs.Physics
             {
                 origin = origin,
                 direction = direction,
+                targetMask = layerMask,
                 aabbs = aabbs,
                 positions = positions,
                 scales = scales,
+                layers = layers,
                 outDistances = distances
             };
 
@@ -118,7 +142,7 @@ namespace DoTs.Physics
         {
             ResourceLocator<IRaycastProvider>.SetResourceProvider(this);
             
-            _query = Entities.WithAllReadOnly<AABB, Translation, Scale>().ToEntityQuery();
+            _query = Entities.WithAllReadOnly<AABB, LayerMask, Translation, Scale>().ToEntityQuery();
         }
         
 

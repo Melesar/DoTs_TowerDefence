@@ -1,7 +1,5 @@
 using Unity.Entities;
-using Unity.Jobs;
 using UnityEngine;
-using UnityEngine.Animations;
 
 namespace DoTs
 {

@@ -71,6 +71,7 @@ namespace DoTs
                         maxValue = 8f,
                     });
                     _entityManager.SetComponentData(enemy, new AABB{extents = 0.15f});
+                    _entityManager.SetComponentData(enemy, LayerMask.Create(Layer.Enemy));
                 }
             }
         }
@@ -94,7 +95,8 @@ namespace DoTs
                 typeof(SpriteAnimationData),
                 typeof(Health),
                 typeof(AABB),
-                typeof(AIAgent)
+                typeof(AIAgent),
+                typeof(LayerMask)
             );
         }
     }
