@@ -32,7 +32,7 @@ namespace DoTs.Templates
 
         private void CreateTurret(EntityManager entityManager, Vector3 position)
         {
-            var turretEntity = entityManager.CreateEntity(GetTurretArchetype(entityManager));
+            var turretEntity = entityManager.CreateEntity(EntityArchetypes.MainTurret);
             entityManager.SetName(turretEntity, "Fortress turret");
 
             var worldPosition = position + _turret.transform.position;
@@ -75,7 +75,7 @@ namespace DoTs.Templates
 
         private void CreateWall(EntityManager entityManager, Vector3 position, GameObject wall)
         {
-            var wallEntity = entityManager.CreateEntity(GetWallArchetype(entityManager));
+            var wallEntity = entityManager.CreateEntity(EntityArchetypes.Wall);
             entityManager.SetName(wallEntity, "Fortress wall");
 
             var worldPosition = position + wall.transform.position;
@@ -99,36 +99,6 @@ namespace DoTs.Templates
             });
             entityManager.SetComponentData(wallEntity, new AABB {extents = 0.4f});
             entityManager.SetComponentData(wallEntity, LayerMask.Create(Layer.Building));
-        }
-
-        private static EntityArchetype GetTurretArchetype(EntityManager entityManager)
-        {
-            return entityManager.CreateArchetype(
-                typeof(Translation),
-                typeof(Rotation),
-                typeof(Scale),
-                typeof(Graphics.Sprite),
-                typeof(TurretRotation),
-                typeof(TurretAim),
-                typeof(TurretShooting),
-                typeof(Target),
-                typeof(AABB),
-                typeof(PhysicsStatic),
-                typeof(LayerMask)
-                );
-        }
-
-        private static EntityArchetype GetWallArchetype(EntityManager entityManager)
-        {
-            return entityManager.CreateArchetype(
-                typeof(Translation),
-                typeof(Scale),
-                typeof(Graphics.Sprite),
-                typeof(Health),
-                typeof(AABB),
-                typeof(PhysicsStatic),
-                typeof(LayerMask)
-            );
         }
     }
 }

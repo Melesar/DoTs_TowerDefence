@@ -7,6 +7,7 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
+using UnityEngine.Profiling;
 
 namespace DoTs.Physics
 {
@@ -14,6 +15,43 @@ namespace DoTs.Physics
     public class RaycastSystem : ComponentSystem, IRaycastProvider
     {
         private EntityQuery _query;
+        
+        [BurstCompile]
+        private struct RaycastForEachJob : IJobForEachWithEntity<AABB, Scale, LayerMask, Translation>
+        {
+            public float3 origin;
+            public float3 direction;
+            public LayerMask targetMask;
+
+            public NativeArray<float> outDistances;
+            
+            public void Execute(
+                Entity entity,
+                int index, 
+                [ReadOnly] ref AABB aabb, 
+                [ReadOnly] ref Scale scale,
+                [ReadOnly] ref LayerMask layerMask,
+                [ReadOnly] ref Translation translation)
+            {
+                if (!ValidateLayer(layerMask))
+                {
+                    outDistances[index] = float.NegativeInfinity;
+                    return;
+                }
+                
+                var size = scale.Value * 2f * aabb.extents;
+                var bounds = new Bounds(translation.Value, size);
+                var ray = new Ray(origin, direction);
+
+                outDistances[index] = bounds.IntersectRay(ray, out var distance) ? distance : float.NegativeInfinity;
+            }
+
+            private bool ValidateLayer(LayerMask mask)
+            {
+                var targetLayer = targetMask.ToLayer();
+                return mask.HasLayer(targetLayer);
+            }
+        }
         
         [BurstCompile]
         private struct RaycastJob : IJobParallelFor
@@ -99,26 +137,20 @@ namespace DoTs.Physics
 
         public RaycastResult Raycast(float3 origin, float3 direction, LayerMask layerMask)
         {
+            Profiler.BeginSample("Raycast");
             var count = _query.CalculateLength();
-            var aabbs = _query.ToComponentDataArray<AABB>(Allocator.TempJob);
             var positions = _query.ToComponentDataArray<Translation>(Allocator.TempJob);
-            var scales = _query.ToComponentDataArray<Scale>(Allocator.TempJob);
-            var layers = _query.ToComponentDataArray<LayerMask>(Allocator.TempJob);
             var entities = _query.ToEntityArray(Allocator.TempJob);
 
             var distances = new NativeArray<float>(count, Allocator.TempJob);
             var results = new NativeArray<RaycastResult>(1, Allocator.TempJob);
 
-            var raycast = new RaycastJob
+            var raycast = new RaycastForEachJob
             {
-                origin = origin,
                 direction = direction,
-                targetMask = layerMask,
-                aabbs = aabbs,
-                positions = positions,
-                scales = scales,
-                layers = layers,
-                outDistances = distances
+                origin = origin,
+                outDistances = distances,
+                targetMask = layerMask
             };
 
             var getResult = new RaycastResultJob
@@ -129,12 +161,13 @@ namespace DoTs.Physics
                 outResult = results
             };
 
-            var handle = raycast.Schedule(count, 16);
+            var handle = raycast.Schedule(this);
             handle = getResult.Schedule(handle);
             handle.Complete();
             
             var result = results[0];
             results.Dispose();
+            Profiler.EndSample();
             return result;
         }
 

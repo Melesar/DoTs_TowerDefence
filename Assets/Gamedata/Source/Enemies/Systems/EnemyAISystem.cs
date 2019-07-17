@@ -33,7 +33,11 @@ namespace DoTs
                 var direction = targetPosition - enemyPosition;
 
                 var enemyEntity = entities[i];
-                var raycastResult = _raycastProvider.Raycast(enemyPosition, direction, LayerMask.Create(Layer.Building));
+//                var raycastResult = _raycastProvider.Raycast(enemyPosition, direction, LayerMask.Create(Layer.Building));
+                var raycastResult = new RaycastResult
+                {
+                    distance = -100f
+                };
                 if (raycastResult.IsHit() && raycastResult.distance <= _enemyAttack.range)
                 {
                     RemoveComponent<Movement>(enemyEntity);
@@ -76,14 +80,14 @@ namespace DoTs
             }
         }
 
-        protected override void OnCreate()
-        {
-            _query = Entities.WithAllReadOnly<AIAgent, TargetOwnership, Translation>().ToEntityQuery();
-        }
-
         protected override void OnStartRunning()
         {
             _raycastProvider = ResourceLocator<IRaycastProvider>.GetResourceProvider();
+        }
+
+        protected override void OnCreate()
+        {
+            _query = Entities.WithAllReadOnly<AIAgent, TargetOwnership, Translation>().ToEntityQuery();
         }
     }
 }

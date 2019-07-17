@@ -24,7 +24,6 @@ namespace DoTs
         [SerializeField]
         private int _spawnBatchSize = 2;
         
-        private EntityArchetype _enemyArchetype;
         private float _spawnTime;
         private AnimationSequence _animationSequence;
 
@@ -44,7 +43,7 @@ namespace DoTs
         {
             using (var enemies = new NativeArray<Entity>(_spawnBatchSize, Allocator.Temp))
             {
-                _entityManager.CreateEntity(_enemyArchetype, enemies);
+                _entityManager.CreateEntity(EntityArchetypes.Enemy, enemies);
                 foreach (var enemy in enemies)
                 {
                     var position = _spawnOrigin.position + (Random.insideUnitCircle * _spawnRange).AsVector3();
@@ -80,24 +79,6 @@ namespace DoTs
         {
             var animationDataProvider = ResourceLocator<AnimationDataProvider>.GetResourceProvider();
             _animationSequence = animationDataProvider.GetAnimationSequence(AnimationEntityType.Enemy);
-        }
-
-        protected override void Awake()
-        {
-            base.Awake();
-            
-            _enemyArchetype = _entityManager.CreateArchetype(
-                typeof (Enemy),
-                typeof(Translation),
-                typeof(Rotation),
-                typeof(Scale),
-                typeof(Graphics.Sprite),
-                typeof(SpriteAnimationData),
-                typeof(Health),
-                typeof(AABB),
-                typeof(AIAgent),
-                typeof(LayerMask)
-            );
         }
     }
 }

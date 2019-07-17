@@ -15,8 +15,6 @@ namespace DoTs
     [UpdateAfter(typeof(TurretRotationSystem))]
     public class TurretShootingSystem : ComponentSystem
     {
-        private EntityArchetype _shellArchetype;
-        private EntityArchetype _shellExplosionArchetype;
         private ShellData _shellTemplate;
         private EndSimulationEntityCommandBufferSystem _commandBufferSystem;
 
@@ -54,8 +52,6 @@ namespace DoTs
             [ReadOnly]
             public NativeHashMap<int, float3> shellPositions;
             public EntityCommandBuffer commandBuffer;
-            public EntityArchetype shellArchetype;
-            public EntityArchetype shellExplosionArchetype;
             public ShellData shellTemplate;
             
             public void Execute()
@@ -69,12 +65,12 @@ namespace DoTs
 
             private void SpawnExplosion(float3 position)
             {
-                var shell = commandBuffer.CreateEntity(shellArchetype);
+                var shell = commandBuffer.CreateEntity(EntityArchetypes.Shell);
                 commandBuffer.SetComponent(shell, new Translation{Value = position});
                 commandBuffer.SetComponent(shell, shellTemplate.shellData);
                 
 
-                var explosion = commandBuffer.CreateEntity(shellExplosionArchetype);
+                var explosion = commandBuffer.CreateEntity(EntityArchetypes.ShellExplosion);
                 commandBuffer.SetComponent(explosion, new Translation{Value = position});
                 commandBuffer.SetComponent(explosion, new Rotation{Value = quaternion.identity});
                 commandBuffer.SetComponent(explosion, new Scale {Value = 4f});
@@ -97,8 +93,6 @@ namespace DoTs
             {
                 shellPositions = shellsQueue,
                 commandBuffer = _commandBufferSystem.CreateCommandBuffer(),
-                shellArchetype = _shellArchetype,
-                shellExplosionArchetype = _shellExplosionArchetype,
                 shellTemplate = _shellTemplate
             };
 
@@ -122,20 +116,6 @@ namespace DoTs
             _commandBufferSystem = World.GetExistingSystem<EndSimulationEntityCommandBufferSystem>();
 
             SetShellData();
-
-            _shellArchetype = EntityManager.CreateArchetype(
-                typeof(Translation),
-                typeof(ExplosiveShell)
-            );
-
-            _shellExplosionArchetype = EntityManager.CreateArchetype(
-                typeof(Translation),
-                typeof(Rotation),
-                typeof(Scale),
-                typeof(DoTs.Graphics.Sprite),
-                typeof(SpriteAnimationData),
-                typeof(Lifetime)
-            );
         }
 
         private void SetShellData()
