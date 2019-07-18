@@ -20,17 +20,51 @@ namespace DoTs
             }
         }
 
-        private void DrawQuadrants()
+        public void ShowEnemiesInRadius(Vector3 position, float radius)
         {
-            var mousePos = Camera.ScreenToWorldPoint(Input.mousePosition);
+            DrawCircle(position, radius, Color.red);
 
-            DrawQuadrant(mousePos);
-            using (var enemies = GetEnemiesInQuadrant(mousePos, Allocator.Temp))
+            using (var enemies = GetEnemiesWithinRadiusRandom(position, radius, Allocator.Temp))
             {
-                Debug.Log($"Quadrant {GetQuadrantHash(mousePos)}, {enemies.Length} enemies");
+                for (int i = 0; i < enemies.Length; i++)
+                {
+                    var enemyPosition = enemies[i].position;
+                    DrawEnemyBoundary(enemyPosition, Color.green);
+                }
             }
         }
 
+        private static void DrawCircle(Vector3 center, float radius, Color color)
+        {
+            const int segmentsCount = 25;
+            const float step = 2f * Mathf.PI / segmentsCount;
+            
+            for(var angle = 0f; angle < 2 * Mathf.PI; angle += step)
+            {
+                var x1 = center.x + radius * Mathf.Cos(angle);
+                var y1 = center.y + radius * Mathf.Sin(angle);
+                
+                var x2 = center.x + radius * Mathf.Cos(angle + step);
+                var y2 = center.y + radius * Mathf.Sin(angle + step);
+
+                Debug.DrawLine(new Vector3(x1, y1), new Vector3(x2, y2), color);
+            }
+        }
+
+        private static void DrawEnemyBoundary(Vector3 position, Color color)
+        {
+            Debug.DrawLine(position + new Vector3(-0.5f, -0.5f), position + new Vector3(-0.5f, +0.5f), color);
+            Debug.DrawLine(position + new Vector3(-0.5f, +0.5f), position + new Vector3(+0.5f, +0.5f), color);
+            Debug.DrawLine(position + new Vector3(+0.5f, +0.5f), position + new Vector3(+0.5f, -0.5f), color);
+            Debug.DrawLine(position + new Vector3(+0.5f, -0.5f), position + new Vector3(-0.5f, +0.5f), color);
+        }
+
+        private static void DrawPoint(Vector3 position, Color color)
+        {
+            Debug.DrawLine(position + Vector3.down * 0.3f, position + Vector3.up * 0.3f, color);
+            Debug.DrawLine(position + Vector3.left * 0.3f, position + Vector3.right * 0.3f, color);
+        }
+        
         private static void DrawQuadrant(Vector3 position)
         {
             var lowerLeft = new Vector3(Mathf.FloorToInt(position.x / CELL_SIZE) * CELL_SIZE,

@@ -1,6 +1,8 @@
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
+using UnityEngine;
+using Random = Unity.Mathematics.Random;
 
 namespace DoTs
 {
@@ -8,9 +10,41 @@ namespace DoTs
     {
         public NativeList<EnemyData> GetEnemiesInQuadrant(float3 position, Allocator allocator = Allocator.TempJob)
         {
+            return GetEnemiesInQuadrant(GetQuadrantHash(position), allocator);
+        }
+
+        public NativeList<EnemyData> GetEnemiesWithinRadiusRandom(float3 position, float radius,
+            Allocator allocator = Allocator.TempJob)
+        {
+            const int randomPointsCount = 30;
+            using (var points = GeneratePointsInCircle(randomPointsCount, position, radius))
+            using(var hashMap = new NativeHashMap<int, float3>(randomPointsCount, Allocator.Temp))
+            {
+                for (int i = 0; i < randomPointsCount; i++)
+                {
+                    var hash = GetQuadrantHash(points[i]);
+                    hashMap.TryAdd(hash, points[i]);
+                }
+                
+                var enemies = new NativeList<EnemyData>(allocator);
+                var uniqueHashes = hashMap.GetKeyArray(Allocator.Temp);
+                var uniquePoints = hashMap.GetValueArray(Allocator.Temp);
+                for (int i = 0; i < uniqueHashes.Length; i++)
+                {
+                    var enemiesInQuadrant = GetEnemiesInQuadrant(uniqueHashes[i]);
+                    enemies.AddRange(enemiesInQuadrant);
+                    enemiesInQuadrant.Dispose();
+                }
+                uniqueHashes.Dispose();
+                uniquePoints.Dispose();
+                return enemies;
+            }
+        }
+
+        private NativeList<EnemyData> GetEnemiesInQuadrant(int hash, Allocator allocator = Allocator.TempJob)
+        {
             var enemies = new NativeList<EnemyData>(allocator);
-            var hash = GetQuadrantHash(position);
-            if (!_quadrantsMap.TryGetFirstValue(hash, out var data, out var it))
+            if (!_enemyQuadrantsMap.TryGetFirstValue(hash, out var data, out var it))
             {
                 return enemies;
             }
@@ -18,44 +52,27 @@ namespace DoTs
             do
             {
                 enemies.Add(data);
-            } while (_quadrantsMap.TryGetNextValue(out data, ref it));
+            } while (_enemyQuadrantsMap.TryGetNextValue(out data, ref it));
 
             return enemies;
         }
 
-        public NativeList<EnemyData> GetEnemiesWithinRadius(float3 position, float radius,
-            Allocator allocator = Allocator.TempJob)
+        private NativeArray<float3> GeneratePointsInCircle(int count, float3 center, float radius)
         {
-            var leftX = position.x - radius;
-            var rightX = position.x + radius;
-            var upY = position.y + radius;
-            var downY = position.y - radius;
-            const float step = CELL_SIZE / 2f;
-
-            var gridSize = UnityEngine.Mathf.FloorToInt(2 * radius / step);
-            var points = new NativeArray<float3>(gridSize * gridSize, Allocator.Temp);
-            var enemies = new NativeList<EnemyData>(allocator);
-            using (points)
+            var points = new NativeArray<float3>(count, Allocator.Temp);
+            var seed = (uint) math.abs(math.ceil(center.x + center.y));
+            var random = new Random(seed != 0 ? seed : 100);
+            
+            for (int i = 0; i < count; i++)
             {
-                var pointIndex = 0;
-                for (float x = leftX; x <= rightX; x += step)
-                {
-                    for (float y = downY; y <= upY; y += step)
-                    {
-                        points[pointIndex++] = new float3(x, y, 0);
-                    }
-                }
+                var point = 2f * random.NextFloat2() - 1f;
+                point *= radius;
+                point += new float2(center.x, center.y);
 
-                for (int i = 0; i < points.Length; i++)
-                {
-                    using (var enemiesInQuadrant = GetEnemiesInQuadrant(points[i], Allocator.Temp))
-                    {
-                        enemies.AddRange(enemiesInQuadrant.AsArray());
-                    }
-                }
-
-                return enemies;
+                points[i] = new float3(point.x, point.y, 0);
             }
+
+            return points;
         }
     }
 }

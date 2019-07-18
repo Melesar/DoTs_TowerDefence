@@ -15,7 +15,7 @@ namespace DoTs
     
     public partial class QuadrantSystem : JobComponentSystem
     {
-        private NativeMultiHashMap<int, EnemyData> _quadrantsMap;
+        private NativeMultiHashMap<int, EnemyData> _enemyQuadrantsMap;
         
         private EntityQuery _enemiesQuery;
 
@@ -37,17 +37,15 @@ namespace DoTs
 
         protected override JobHandle OnUpdate(JobHandle inputDeps)
         {
-            DrawQuadrants();
-            
-            _quadrantsMap.Clear();
+            _enemyQuadrantsMap.Clear();
             
             var enemiesCount = _enemiesQuery.CalculateLength();
-            if (_quadrantsMap.Capacity < enemiesCount)
+            if (_enemyQuadrantsMap.Capacity < enemiesCount)
             {
-                _quadrantsMap.Capacity = enemiesCount;
+                _enemyQuadrantsMap.Capacity = enemiesCount;
             }
 
-            var job = new SetEnemyQuadrantsDataJob {map = _quadrantsMap.ToConcurrent()};
+            var job = new SetEnemyQuadrantsDataJob {map = _enemyQuadrantsMap.ToConcurrent()};
             inputDeps = job.Schedule(_enemiesQuery, inputDeps);
             
             return inputDeps;
@@ -60,13 +58,13 @@ namespace DoTs
 
         protected override void OnCreate()
         {
-            _quadrantsMap = new NativeMultiHashMap<int, EnemyData>(0, Allocator.Persistent);
+            _enemyQuadrantsMap = new NativeMultiHashMap<int, EnemyData>(0, Allocator.Persistent);
             _enemiesQuery = GetEntityQuery(EntityArchetypes.Enemy.GetComponentTypes());
         }
 
         protected override void OnDestroy()
         {
-            _quadrantsMap.Dispose();
+            _enemyQuadrantsMap.Dispose();
         }
     }
 }
