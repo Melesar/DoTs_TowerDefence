@@ -8,71 +8,90 @@ namespace DoTs
 {
     public partial class QuadrantSystem
     {
-        public NativeList<EnemyData> GetEnemiesInQuadrant(float3 position, Allocator allocator = Allocator.TempJob)
+        public struct QuadrantSystemAccess
         {
-            return GetEnemiesInQuadrant(GetQuadrantHash(position), allocator);
-        }
+            [ReadOnly]
+            private NativeMultiHashMap<int, EnemyData> _quadrantMap;
 
-        public NativeList<EnemyData> GetEnemiesWithinRadiusRandom(float3 position, float radius,
-            Allocator allocator = Allocator.TempJob)
-        {
-            const int randomPointsCount = 30;
-            using (var points = GeneratePointsInCircle(randomPointsCount, position, radius))
-            using(var hashMap = new NativeHashMap<int, float3>(randomPointsCount, Allocator.Temp))
+            public NativeList<EnemyData> GetEnemiesInQuadrant(float3 position, Allocator allocator = Allocator.TempJob)
             {
-                for (int i = 0; i < randomPointsCount; i++)
+                return GetEnemiesInQuadrant(GetQuadrantHash(position), allocator);
+            }
+
+            public NativeList<EnemyData> GetEnemiesWithinRadius(float3 position, float radius,
+                Allocator allocator = Allocator.TempJob)
+            {
+                const int randomPointsCount = 30;
+                using (var points = GeneratePointsInCircle(randomPointsCount, position, radius))
+                using (var hashMap = new NativeHashMap<int, float3>(randomPointsCount, Allocator.Temp))
                 {
-                    var hash = GetQuadrantHash(points[i]);
-                    hashMap.TryAdd(hash, points[i]);
+                    for (int i = 0; i < randomPointsCount; i++)
+                    {
+                        var hash = GetQuadrantHash(points[i]);
+                        hashMap.TryAdd(hash, points[i]);
+                    }
+
+                    var enemies = new NativeList<EnemyData>(allocator);
+                    var uniqueHashes = hashMap.GetKeyArray(Allocator.Temp);
+                    for (int i = 0; i < uniqueHashes.Length; i++)
+                    {
+                        var hash = uniqueHashes[i];
+                        if (!_quadrantMap.TryGetFirstValue(hash, out var data, out var it))
+                        {
+                            continue;
+                        }
+                        
+                        do
+                        {
+                            enemies.Add(data);
+                        } 
+                        while (_quadrantMap.TryGetNextValue(out data, ref it));
+                    }
+
+                    uniqueHashes.Dispose();
+                    return enemies;
                 }
-                
+            }
+
+            private NativeList<EnemyData> GetEnemiesInQuadrant(int hash, Allocator allocator = Allocator.TempJob)
+            {
                 var enemies = new NativeList<EnemyData>(allocator);
-                var uniqueHashes = hashMap.GetKeyArray(Allocator.Temp);
-                var uniquePoints = hashMap.GetValueArray(Allocator.Temp);
-                for (int i = 0; i < uniqueHashes.Length; i++)
+                if (!_quadrantMap.TryGetFirstValue(hash, out var data, out var it))
                 {
-                    var enemiesInQuadrant = GetEnemiesInQuadrant(uniqueHashes[i]);
-                    enemies.AddRange(enemiesInQuadrant);
-                    enemiesInQuadrant.Dispose();
+                    return enemies;
                 }
-                uniqueHashes.Dispose();
-                uniquePoints.Dispose();
-                return enemies;
-            }
-        }
 
-        private NativeList<EnemyData> GetEnemiesInQuadrant(int hash, Allocator allocator = Allocator.TempJob)
-        {
-            var enemies = new NativeList<EnemyData>(allocator);
-            if (!_enemyQuadrantsMap.TryGetFirstValue(hash, out var data, out var it))
-            {
+                do
+                {
+                    enemies.Add(data);
+                } 
+                while (_quadrantMap.TryGetNextValue(out data, ref it));
+
                 return enemies;
             }
 
-            do
+            private NativeArray<float3> GeneratePointsInCircle(int count, float3 center, float radius)
             {
-                enemies.Add(data);
-            } while (_enemyQuadrantsMap.TryGetNextValue(out data, ref it));
+                var points = new NativeArray<float3>(count, Allocator.Temp);
+                var seed = (uint) math.abs(math.ceil(center.x + center.y));
+                var random = new Random(seed != 0 ? seed : 100);
 
-            return enemies;
-        }
+                for (int i = 0; i < count; i++)
+                {
+                    var point = 2f * random.NextFloat2() - 1f;
+                    point *= radius;
+                    point += new float2(center.x, center.y);
 
-        private NativeArray<float3> GeneratePointsInCircle(int count, float3 center, float radius)
-        {
-            var points = new NativeArray<float3>(count, Allocator.Temp);
-            var seed = (uint) math.abs(math.ceil(center.x + center.y));
-            var random = new Random(seed != 0 ? seed : 100);
-            
-            for (int i = 0; i < count; i++)
-            {
-                var point = 2f * random.NextFloat2() - 1f;
-                point *= radius;
-                point += new float2(center.x, center.y);
+                    points[i] = new float3(point.x, point.y, 0);
+                }
 
-                points[i] = new float3(point.x, point.y, 0);
+                return points;
             }
 
-            return points;
+            public QuadrantSystemAccess(NativeMultiHashMap<int, EnemyData> quadrantMap)
+            {
+                _quadrantMap = quadrantMap;
+            }
         }
     }
 }

@@ -24,7 +24,8 @@ namespace DoTs
         {
             DrawCircle(position, radius, Color.red);
 
-            using (var enemies = GetEnemiesWithinRadiusRandom(position, radius, Allocator.Temp))
+            var access = GetQuadrantsAccess();
+            using (var enemies = access.GetEnemiesWithinRadius(position, radius, Allocator.Temp))
             {
                 for (int i = 0; i < enemies.Length; i++)
                 {

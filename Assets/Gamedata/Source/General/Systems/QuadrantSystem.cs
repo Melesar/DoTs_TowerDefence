@@ -1,3 +1,4 @@
+using DoTs.Resources;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
@@ -13,7 +14,7 @@ namespace DoTs
         public float3 position;
     }
     
-    public partial class QuadrantSystem : JobComponentSystem
+    public partial class QuadrantSystem : JobComponentSystem, IResourceProvider
     {
         private NativeMultiHashMap<int, EnemyData> _enemyQuadrantsMap;
         
@@ -21,6 +22,11 @@ namespace DoTs
 
         private const float CELL_SIZE = 4f;
         private const int Y_MULTIPLIER = 100;
+
+        public QuadrantSystemAccess GetQuadrantsAccess()
+        {
+            return new QuadrantSystemAccess(_enemyQuadrantsMap);
+        }
         
         private struct SetEnemyQuadrantsDataJob : IJobForEachWithEntity<Translation, Health>
         {
@@ -58,12 +64,14 @@ namespace DoTs
 
         protected override void OnCreate()
         {
+            ResourceLocator<QuadrantSystem>.SetResourceProvider(this);
             _enemyQuadrantsMap = new NativeMultiHashMap<int, EnemyData>(0, Allocator.Persistent);
             _enemiesQuery = GetEntityQuery(EntityArchetypes.Enemy.GetComponentTypes());
         }
 
         protected override void OnDestroy()
         {
+            ResourceLocator<QuadrantSystem>.SetResourceProvider(null);
             _enemyQuadrantsMap.Dispose();
         }
     }

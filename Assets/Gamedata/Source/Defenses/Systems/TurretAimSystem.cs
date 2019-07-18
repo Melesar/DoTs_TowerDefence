@@ -9,8 +9,7 @@ using UnityEngine;
 
 namespace DoTs
 {
-    [UpdateInGroup(typeof(TurretsSystemGroup))]
-    [UpdateBefore(typeof(TurretRotationSystem))]
+    [DisableAutoCreation]
     public class TurretAimSystem : ComponentSystem
     {
         private NativeList<JobHandle> _handles;
