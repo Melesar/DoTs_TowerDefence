@@ -25,7 +25,7 @@ namespace DoTs
             public void Execute(Entity entity, int index, [ReadOnly] ref Translation translation, [ReadOnly] ref TurretAim aim)
             {
                 //TODO Try moving searching for enemies and sorting into different Burst compiled job
-                using (var enemiesInRadius = quadrantsAccess.GetEnemiesWithinRadius(translation.Value, aim.aimRange, Allocator.Temp))
+                using (var enemiesInRadius = quadrantsAccess.GetActorsWithinRadius(translation.Value, aim.aimRange, Allocator.Temp))
                 {
                     if (enemiesInRadius.Length == 0)
                     {

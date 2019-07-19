@@ -14,47 +14,63 @@ namespace DoTs.Quadrants
             [ReadOnly]
             private NativeMultiHashMap<int, T> _quadrantMap;
 
-            public NativeList<T> GetEnemiesInQuadrant(float3 position, Allocator allocator = Allocator.TempJob)
+            public NativeList<T> GetActorsInQuadrant(float3 position, Allocator allocator = Allocator.TempJob)
             {
-                return GetEnemiesInQuadrant(GetQuadrantHash(position), allocator);
+                return GetActorsInQuadrant(GetQuadrantHash(position), allocator);
             }
 
-            public NativeList<T> GetEnemiesWithinRadius(float3 position, float radius,
+            public NativeList<T> GetActorsWithinRadius(float3 position, float radius,
                 Allocator allocator = Allocator.TempJob)
             {
                 const int randomPointsCount = 30;
-                using (var points = GeneratePointsInCircle(randomPointsCount, position, radius))
-                using (var hashMap = new NativeHashMap<int, float3>(randomPointsCount, Allocator.Temp))
-                {
-                    for (int i = 0; i < randomPointsCount; i++)
-                    {
-                        var hash = GetQuadrantHash(points[i]);
-                        hashMap.TryAdd(hash, points[i]);
-                    }
-
-                    var enemies = new NativeList<T>(allocator);
-                    var uniqueHashes = hashMap.GetKeyArray(Allocator.Temp);
-                    for (int i = 0; i < uniqueHashes.Length; i++)
-                    {
-                        var hash = uniqueHashes[i];
-                        if (!_quadrantMap.TryGetFirstValue(hash, out var data, out var it))
-                        {
-                            continue;
-                        }
-
-                        do
-                        {
-                            enemies.Add(data);
-                        } 
-                        while (_quadrantMap.TryGetNextValue(out data, ref it));
-                    }
-
-                    uniqueHashes.Dispose();
-                    return enemies;
-                }
+                var points = GeneratePointsInCircle(randomPointsCount, position, radius);
+                var actors = GetActorsFromRandomPoints(points, allocator);
+                points.Dispose();
+                return actors;
             }
 
-            private NativeList<T> GetEnemiesInQuadrant(int hash, Allocator allocator = Allocator.TempJob)
+            public NativeList<T> GetActorsAlongTheRay(float3 origin, float3 direction, float maxDistance, Allocator allocator = Allocator.Temp)
+            {
+                const int pointsOnTheRay = 30;
+                var endPoint = origin + math.normalize(direction) * maxDistance;
+                var points = GeneratePointsOnTheLine(pointsOnTheRay, origin, endPoint);
+                var actors = GetActorsFromRandomPoints(points, allocator);
+                points.Dispose();
+                return actors;
+            }
+
+            private NativeList<T> GetActorsFromRandomPoints(NativeArray<float3> points, Allocator allocator)
+            {
+                var hashMap = new NativeHashMap<int, bool>(points.Length, Allocator.Temp);
+                for (int i = 0; i < points.Length; i++)
+                {
+                    var hash = GetQuadrantHash(points[i]);
+                    hashMap.TryAdd(hash, true);
+                }
+
+                var actors = new NativeList<T>(allocator);
+                var uniqueHashes = hashMap.GetKeyArray(Allocator.Temp);
+                hashMap.Dispose();
+
+                for (int i = 0; i < uniqueHashes.Length; i++)
+                {
+                    var hash = uniqueHashes[i];
+                    if (!_quadrantMap.TryGetFirstValue(hash, out var data, out var it))
+                    {
+                        continue;
+                    }
+
+                    do
+                    {
+                        actors.Add(data);
+                    } while (_quadrantMap.TryGetNextValue(out data, ref it));
+                }
+
+                uniqueHashes.Dispose();
+                return actors;
+            }
+
+            private NativeList<T> GetActorsInQuadrant(int hash, Allocator allocator = Allocator.TempJob)
             {
                 var enemies = new NativeList<T>(allocator);
                 if (!_quadrantMap.TryGetFirstValue(hash, out var data, out var it))
@@ -69,6 +85,11 @@ namespace DoTs.Quadrants
                 while (_quadrantMap.TryGetNextValue(out data, ref it));
 
                 return enemies;
+            }
+
+            private NativeArray<float3> GeneratePointsOnTheLine(int count, float3 start, float3 finish)
+            {
+                return new NativeArray<float3>(count, Allocator.Temp);
             }
 
             private NativeArray<float3> GeneratePointsInCircle(int count, float3 center, float radius)

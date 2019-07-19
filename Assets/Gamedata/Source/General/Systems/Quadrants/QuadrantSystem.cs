@@ -33,10 +33,15 @@ namespace DoTs.Quadrants
     public abstract class QuadrantSystem<T> : QuadrantSystem where T : struct
     {
         protected NativeMultiHashMap<int, T> _actorsMap;
-
+        
         public QuadrantSystemAccess<T> GetQuadrantAccess()
         {
             return new QuadrantSystemAccess<T>(_actorsMap);
+        }
+
+        protected NativeMultiHashMap<int, T>.Concurrent GetMapForJob()
+        {
+            return _actorsMap.ToConcurrent();
         }
         
         protected override JobHandle OnUpdate(JobHandle inputDeps)

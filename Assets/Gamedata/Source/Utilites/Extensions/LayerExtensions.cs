@@ -26,6 +26,11 @@ namespace DoTs.Utilites
             return layer == Layer.Default || (mask.value & (int) layer) != 0;
         }
 
+        public static bool IsMatch(this LayerMask left, LayerMask right)
+        {
+            return left.HasLayer(right.ToLayer());
+        }
+
         public static Layer ToLayer(this LayerMask mask)
         {
             return (Layer) mask.value;

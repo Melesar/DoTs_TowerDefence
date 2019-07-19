@@ -37,7 +37,7 @@ namespace DoTs.Quadrants
         {
             var job = new SetEnemyQuadrantsDataJob
             {
-                map = _actorsMap.ToConcurrent()
+                map = GetMapForJob()
             };
 
             return job.Schedule(_query, inputDeps);
