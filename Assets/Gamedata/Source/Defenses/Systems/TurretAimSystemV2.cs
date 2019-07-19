@@ -23,6 +23,7 @@ namespace DoTs
 
             public void Execute(Entity entity, int index, [ReadOnly] ref Translation translation, [ReadOnly] ref TurretAim aim)
             {
+                //TODO Try moving searching for enemies and sorting into different Burst compiled job
                 var enemiesInRadius = quadrantsAccess.GetEnemiesWithinRadius(translation.Value, aim.aimRange, Allocator.Temp);
                 if (enemiesInRadius.Length == 0)
                 {
@@ -31,7 +32,8 @@ namespace DoTs
                 
                 QuickSort(translation.Value, enemiesInRadius, 0, enemiesInRadius.Length - 1);
                 
-                var nearestEnemy = enemiesInRadius[enemiesInRadius.Length - 1];
+                var nearestEnemy = enemiesInRadius[0];
+                
                 commands.AddComponent(index, entity, new TargetOwnership
                 {
                     targetEntity = nearestEnemy.entity,

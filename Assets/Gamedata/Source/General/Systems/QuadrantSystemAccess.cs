@@ -1,5 +1,6 @@
 using Unity.Collections;
 using Unity.Entities;
+using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
 using Random = Unity.Mathematics.Random;
@@ -43,7 +44,10 @@ namespace DoTs
                         
                         do
                         {
-                            enemies.Add(data);
+                            if (CheckDistance(data, position, radius))
+                            {
+                                enemies.Add(data);
+                            }
                         } 
                         while (_quadrantMap.TryGetNextValue(out data, ref it));
                     }
@@ -51,6 +55,13 @@ namespace DoTs
                     uniqueHashes.Dispose();
                     return enemies;
                 }
+            }
+
+            private static bool CheckDistance(EnemyData enemyData, float3 position, float radius)
+            {
+                var enemyPosition = enemyData.position;
+                var distanceSqr = math.distancesq(enemyPosition, position);
+                return distanceSqr <= radius * radius;
             }
 
             private NativeList<EnemyData> GetEnemiesInQuadrant(int hash, Allocator allocator = Allocator.TempJob)
