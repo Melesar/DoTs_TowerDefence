@@ -5,21 +5,21 @@ using Unity.Mathematics;
 using UnityEngine;
 using Random = Unity.Mathematics.Random;
 
-namespace DoTs
+namespace DoTs.Quadrants
 {
     public partial class QuadrantSystem
     {
-        public struct QuadrantSystemAccess
+        public struct QuadrantSystemAccess<T> where T : struct
         {
             [ReadOnly]
-            private NativeMultiHashMap<int, EnemyData> _quadrantMap;
+            private NativeMultiHashMap<int, T> _quadrantMap;
 
-            public NativeList<EnemyData> GetEnemiesInQuadrant(float3 position, Allocator allocator = Allocator.TempJob)
+            public NativeList<T> GetEnemiesInQuadrant(float3 position, Allocator allocator = Allocator.TempJob)
             {
                 return GetEnemiesInQuadrant(GetQuadrantHash(position), allocator);
             }
 
-            public NativeList<EnemyData> GetEnemiesWithinRadius(float3 position, float radius,
+            public NativeList<T> GetEnemiesWithinRadius(float3 position, float radius,
                 Allocator allocator = Allocator.TempJob)
             {
                 const int randomPointsCount = 30;
@@ -32,7 +32,7 @@ namespace DoTs
                         hashMap.TryAdd(hash, points[i]);
                     }
 
-                    var enemies = new NativeList<EnemyData>(allocator);
+                    var enemies = new NativeList<T>(allocator);
                     var uniqueHashes = hashMap.GetKeyArray(Allocator.Temp);
                     for (int i = 0; i < uniqueHashes.Length; i++)
                     {
@@ -41,13 +41,10 @@ namespace DoTs
                         {
                             continue;
                         }
-                        
+
                         do
                         {
-                            if (CheckDistance(data, position, radius))
-                            {
-                                enemies.Add(data);
-                            }
+                            enemies.Add(data);
                         } 
                         while (_quadrantMap.TryGetNextValue(out data, ref it));
                     }
@@ -57,16 +54,9 @@ namespace DoTs
                 }
             }
 
-            private static bool CheckDistance(EnemyData enemyData, float3 position, float radius)
+            private NativeList<T> GetEnemiesInQuadrant(int hash, Allocator allocator = Allocator.TempJob)
             {
-                var enemyPosition = enemyData.position;
-                var distanceSqr = math.distancesq(enemyPosition, position);
-                return distanceSqr <= radius * radius;
-            }
-
-            private NativeList<EnemyData> GetEnemiesInQuadrant(int hash, Allocator allocator = Allocator.TempJob)
-            {
-                var enemies = new NativeList<EnemyData>(allocator);
+                var enemies = new NativeList<T>(allocator);
                 if (!_quadrantMap.TryGetFirstValue(hash, out var data, out var it))
                 {
                     return enemies;
@@ -99,7 +89,7 @@ namespace DoTs
                 return points;
             }
 
-            public QuadrantSystemAccess(NativeMultiHashMap<int, EnemyData> quadrantMap)
+            public QuadrantSystemAccess(NativeMultiHashMap<int, T> quadrantMap)
             {
                 _quadrantMap = quadrantMap;
             }

@@ -1,6 +1,5 @@
 using DoTs.Physics;
 using DoTs.Resources;
-using Unity.Collections;
 using Unity.Entities;
 using Unity.Transforms;
 
@@ -8,7 +7,6 @@ namespace DoTs
 {
     public class EnemyAISystem : ComponentSystem
     {
-        private EntityQuery _query;
         private IRaycastProvider _raycastProvider;
 
         private readonly Movement _enemyMovement = new Movement {speed = 0.3f};
@@ -21,43 +19,35 @@ namespace DoTs
         
         protected override void OnUpdate()
         {
-            var count = _query.CalculateLength();
-            var positions = _query.ToComponentDataArray<Translation>(Allocator.TempJob);
-            var targets = _query.ToComponentDataArray<TargetOwnership>(Allocator.TempJob);
-            var entities = _query.ToEntityArray(Allocator.TempJob);
-            
-            for (int i = 0; i < count; i++)
-            {
-                var enemyPosition = positions[i].Value;
-                var targetPosition = targets[i].targetPosition;
-                var direction = targetPosition - enemyPosition;
+            Entities.WithAllReadOnly<AIAgent, Translation, TargetOwnership>().ForEach(
+                (Entity e, ref Translation t, ref TargetOwnership target) =>
+                {
+                    var enemyPosition = t.Value;
+                    var targetPosition = target.targetPosition;
+                    var direction = targetPosition - enemyPosition;
 
-                var enemyEntity = entities[i];
-//                var raycastResult = _raycastProvider.Raycast(enemyPosition, direction, LayerMask.Create(Layer.Building));
-                var raycastResult = new RaycastResult
-                {
-                    distance = -100f
-                };
-                if (raycastResult.IsHit() && raycastResult.distance <= _enemyAttack.range)
-                {
-                    RemoveComponent<Movement>(enemyEntity);
-                    UpdateComponent(enemyEntity, new TargetOwnership
+//                    var raycastResult =
+//                        _raycastProvider.Raycast(enemyPosition, direction, LayerMask.Create(Layer.Building));
+                    var raycastResult = new RaycastResult
                     {
-                        targetEntity = raycastResult.entity,
-                        targetPosition = raycastResult.position
-                    });
-                    UpdateComponent(enemyEntity, _enemyAttack);
-                }
-                else
-                {
-                    RemoveComponent<EnemyAttack>(enemyEntity);
-                    UpdateComponent(enemyEntity, _enemyMovement);
-                }
-            }
-            
-            positions.Dispose();
-            targets.Dispose();
-            entities.Dispose();
+                        distance = -100f
+                    };
+                    if (raycastResult.IsHit() && raycastResult.distance <= _enemyAttack.range)
+                    {
+                        RemoveComponent<Movement>(e);
+                        UpdateComponent(e, new TargetOwnership
+                        {
+                            targetEntity = raycastResult.entity,
+                            targetPosition = raycastResult.position
+                        });
+                        UpdateComponent(e, _enemyAttack);
+                    }
+                    else
+                    {
+                        RemoveComponent<EnemyAttack>(e);
+                        UpdateComponent(e, _enemyMovement);
+                    }
+                });
         }
 
         private void UpdateComponent<T>(Entity e, T component) where T : struct, IComponentData
@@ -83,11 +73,6 @@ namespace DoTs
         protected override void OnStartRunning()
         {
             _raycastProvider = ResourceLocator<IRaycastProvider>.GetResourceProvider();
-        }
-
-        protected override void OnCreate()
-        {
-            _query = Entities.WithAllReadOnly<AIAgent, TargetOwnership, Translation>().ToEntityQuery();
         }
     }
 }

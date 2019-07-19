@@ -1,3 +1,4 @@
+using DoTs.Quadrants;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
@@ -12,35 +13,53 @@ namespace DoTs
     [UpdateBefore(typeof(TurretRotationSystem))]
     public class TurretAimSystemV2 : JobComponentSystem
     {
-        private QuadrantSystem _quadrantsSystem;
+        private EnemiesQuadrantSystem _quadrantsSystem;
         private EndSimulationEntityCommandBufferSystem _commandsSystem;
 
         [ExcludeComponent(typeof(TargetOwnership))]
         private struct FindTargetJob : IJobForEachWithEntity<Translation, TurretAim>
         {
             public EntityCommandBuffer.Concurrent commands;
-            public QuadrantSystem.QuadrantSystemAccess quadrantsAccess;
+            public QuadrantSystem.QuadrantSystemAccess<EnemyData> quadrantsAccess;
 
             public void Execute(Entity entity, int index, [ReadOnly] ref Translation translation, [ReadOnly] ref TurretAim aim)
             {
                 //TODO Try moving searching for enemies and sorting into different Burst compiled job
-                var enemiesInRadius = quadrantsAccess.GetEnemiesWithinRadius(translation.Value, aim.aimRange, Allocator.Temp);
-                if (enemiesInRadius.Length == 0)
+                using (var enemiesInRadius = quadrantsAccess.GetEnemiesWithinRadius(translation.Value, aim.aimRange, Allocator.Temp))
                 {
-                    return;
+                    if (enemiesInRadius.Length == 0)
+                    {
+                        return;
+                    }
+                
+                    QuickSort(translation.Value, enemiesInRadius, 0, enemiesInRadius.Length - 1);
+
+                    var nearestEnemyIndex = 0;
+                    while (nearestEnemyIndex < enemiesInRadius.Length && 
+                           !CheckDistance(enemiesInRadius[nearestEnemyIndex], translation.Value, aim.aimRange))
+                    {
+                        nearestEnemyIndex++;
+                    }
+
+                    if (nearestEnemyIndex >= enemiesInRadius.Length)
+                    {
+                        return;
+                    }
+
+                    var nearestEnemy = enemiesInRadius[nearestEnemyIndex];
+                    commands.AddComponent(index, entity, new TargetOwnership
+                    {
+                        targetEntity = nearestEnemy.entity,
+                        targetPosition = nearestEnemy.position
+                    });
                 }
-                
-                QuickSort(translation.Value, enemiesInRadius, 0, enemiesInRadius.Length - 1);
-                
-                var nearestEnemy = enemiesInRadius[0];
-                
-                commands.AddComponent(index, entity, new TargetOwnership
-                {
-                    targetEntity = nearestEnemy.entity,
-                    targetPosition = nearestEnemy.position
-                });
-                
-                enemiesInRadius.Dispose();
+            }
+            
+            private static bool CheckDistance(EnemyData enemyData, float3 position, float radius)
+            {
+                var enemyPosition = enemyData.position;
+                var distanceSqr = math.distancesq(enemyPosition, position);
+                return distanceSqr <= radius * radius;
             }
             
             private static void QuickSort(float3 position, NativeList<EnemyData> arr, int startIndex, int endIndex) 
@@ -141,7 +160,7 @@ namespace DoTs
             var findTargetJob = new FindTargetJob
             {
                 commands = _commandsSystem.CreateCommandBuffer().ToConcurrent(),
-                quadrantsAccess = _quadrantsSystem.GetQuadrantsAccess()
+                quadrantsAccess = _quadrantsSystem.GetQuadrantAccess()
             };
 
             var rotateJob = new RotateTowardsTargetJob();
@@ -158,7 +177,7 @@ namespace DoTs
 
         protected override void OnStartRunning()
         {
-            _quadrantsSystem = World.GetExistingSystem<QuadrantSystem>();
+            _quadrantsSystem = World.GetExistingSystem<EnemiesQuadrantSystem>();
             _commandsSystem = World.GetExistingSystem<EndSimulationEntityCommandBufferSystem>();
         }
     }

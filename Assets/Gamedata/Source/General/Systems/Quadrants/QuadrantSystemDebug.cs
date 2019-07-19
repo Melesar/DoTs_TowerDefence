@@ -1,7 +1,7 @@
 using Unity.Collections;
 using UnityEngine;
 
-namespace DoTs
+namespace DoTs.Quadrants
 {
     public partial class QuadrantSystem
     {
@@ -17,21 +17,6 @@ namespace DoTs
                 }
                 
                 return _camera;
-            }
-        }
-
-        public void ShowEnemiesInRadius(Vector3 position, float radius)
-        {
-            DrawCircle(position, radius, Color.red);
-
-            var access = GetQuadrantsAccess();
-            using (var enemies = access.GetEnemiesWithinRadius(position, radius, Allocator.Temp))
-            {
-                for (int i = 0; i < enemies.Length; i++)
-                {
-                    var enemyPosition = enemies[i].position;
-                    DrawEnemyBoundary(enemyPosition, Color.green);
-                }
             }
         }
 
