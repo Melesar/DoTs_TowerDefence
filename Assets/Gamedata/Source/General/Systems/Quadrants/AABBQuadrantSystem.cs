@@ -16,6 +16,7 @@ namespace DoTs.Quadrants
         public LayerMask layerMask;
     }
     
+    [UpdateInGroup(typeof(QuadrantSystemGroup))]
     public class AABBQuadrantSystem : QuadrantSystem<AABBData>
     {
         private struct AABBQuadrantJob : IJobForEachWithEntity<AABB, Translation, Scale, LayerMask>

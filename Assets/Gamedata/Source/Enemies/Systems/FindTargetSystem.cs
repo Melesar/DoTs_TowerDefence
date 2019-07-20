@@ -13,7 +13,8 @@ namespace DoTs
 
         private struct AssignTargetJob : IJobParallelFor
         {
-            [DeallocateOnJobCompletion]public NativeArray<Entity> enemies;
+            [DeallocateOnJobCompletion]
+            public NativeArray<Entity> enemies;
             public float3 targetPosition;
             public Entity targetEntity;
             public EntityCommandBuffer.Concurrent commandBuffer;

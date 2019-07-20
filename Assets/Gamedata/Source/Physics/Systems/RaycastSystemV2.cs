@@ -1,3 +1,4 @@
+using System.Numerics;
 using DoTs.Quadrants;
 using DoTs.Utilites;
 using Unity.Burst;
@@ -6,6 +7,7 @@ using Unity.Entities;
 using Unity.Jobs;
 using Unity.Transforms;
 using UnityEngine;
+using Vector3 = UnityEngine.Vector3;
 
 namespace DoTs.Physics
 {
@@ -32,12 +34,14 @@ namespace DoTs.Physics
                 {
                     var aabbData = aabbs[i];
                     var size = aabbData.scale * 2f * aabbData.aabb.extents;
-                    var bounds = new Bounds(t.Value, size);
+                    var bounds = new Bounds(aabbData.position, size);
                     var ray = new Ray(t.Value, agent.direction);
 
-                    isFound |= bounds.IntersectRay(ray, out var distance) &&
-                               distance <= agent.maxDistance &&
-                               aabbData.layerMask.IsMatch(agent.layerMask);
+                    var isIntersection = bounds.IntersectRay(ray, out var distance);
+                    var layersMatch = aabbData.layerMask.IsMatch(agent.layerMask);
+                    isFound |= isIntersection &&
+                               distance <= agent.maxDistance && //distance >= 0 &&
+                               layersMatch;
                     
                     if (isFound && distance < minDistance)
                     {
@@ -57,8 +61,14 @@ namespace DoTs.Physics
                     result.distance = float.NegativeInfinity;
                 }
             }
-        }
 
+            [BurstDiscard]
+            private void Debug(string debug, Vector3 position)
+            {
+                UnityEngine.Debug.Log(debug);
+            }
+        }
+        
         protected override JobHandle OnUpdate(JobHandle inputDeps)
         {
             var job = new RaycastJob

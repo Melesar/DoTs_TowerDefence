@@ -27,7 +27,10 @@ namespace DoTs
                 typeof(Health),
                 typeof(AABB),
                 typeof(AIAgent),
-                typeof(LayerMask)
+                typeof(RaycastAgent),
+                typeof(RaycastResult),
+                typeof(LayerMask),
+                typeof(EnemyAttackRange)
             );
             
             MainTurret = EntityManager.CreateArchetype(

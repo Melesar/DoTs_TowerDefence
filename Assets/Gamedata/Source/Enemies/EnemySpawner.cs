@@ -71,6 +71,7 @@ namespace DoTs
                     });
                     _entityManager.SetComponentData(enemy, new AABB{extents = 0.15f});
                     _entityManager.SetComponentData(enemy, LayerMask.Create(Layer.Enemy));
+                    _entityManager.SetComponentData(enemy, new EnemyAttackRange {value = 0.5f});
                 }
             }
         }

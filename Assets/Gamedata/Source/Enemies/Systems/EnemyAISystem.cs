@@ -2,37 +2,25 @@ using DoTs.Physics;
 using DoTs.Resources;
 using Unity.Entities;
 using Unity.Transforms;
+using UnityEngine;
 
 namespace DoTs
 {
     public class EnemyAISystem : ComponentSystem
     {
-        private IRaycastProvider _raycastProvider;
-
-        private readonly Movement _enemyMovement = new Movement {speed = 0.3f};
+        private readonly Movement _enemyMovement = new Movement {speed = 1f};
         private readonly EnemyAttack _enemyAttack = new EnemyAttack
         {
-            range = 0.5f,
             cooldown = 1f,
             damage = 3f,
         };
         
         protected override void OnUpdate()
         {
-            Entities.WithAllReadOnly<AIAgent, Translation, TargetOwnership>().ForEach(
-                (Entity e, ref Translation t, ref TargetOwnership target) =>
+            Entities.WithAllReadOnly<AIAgent, Translation, RaycastResult, EnemyAttackRange>().ForEach(
+                (Entity e, ref Translation t, ref RaycastResult raycastResult, ref EnemyAttackRange attackRange) =>
                 {
-                    var enemyPosition = t.Value;
-                    var targetPosition = target.targetPosition;
-                    var direction = targetPosition - enemyPosition;
-
-//                    var raycastResult =
-//                        _raycastProvider.Raycast(enemyPosition, direction, LayerMask.Create(Layer.Building));
-                    var raycastResult = new RaycastResult
-                    {
-                        distance = -100f
-                    };
-                    if (raycastResult.IsHit() && raycastResult.distance <= _enemyAttack.range)
+                    if (raycastResult.IsHit() && raycastResult.distance <= attackRange.value)
                     {
                         RemoveComponent<Movement>(e);
                         UpdateComponent(e, new TargetOwnership
@@ -68,11 +56,6 @@ namespace DoTs
             {
                 PostUpdateCommands.RemoveComponent<T>(e);
             }
-        }
-
-        protected override void OnStartRunning()
-        {
-            _raycastProvider = ResourceLocator<IRaycastProvider>.GetResourceProvider();
         }
     }
 }

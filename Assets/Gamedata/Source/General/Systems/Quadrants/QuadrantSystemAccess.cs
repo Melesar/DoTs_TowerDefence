@@ -31,7 +31,7 @@ namespace DoTs.Quadrants
 
             public NativeList<T> GetActorsAlongTheRay(float3 origin, float3 direction, float maxDistance, Allocator allocator = Allocator.Temp)
             {
-                const int pointsOnTheRay = 30;
+                const int pointsOnTheRay = 10;
                 var endPoint = origin + math.normalize(direction) * maxDistance;
                 var points = GeneratePointsOnTheLine(pointsOnTheRay, origin, endPoint);
                 var actors = GetActorsFromRandomPoints(points, allocator);
@@ -55,15 +55,14 @@ namespace DoTs.Quadrants
                 for (int i = 0; i < uniqueHashes.Length; i++)
                 {
                     var hash = uniqueHashes[i];
-                    if (!_quadrantMap.TryGetFirstValue(hash, out var data, out var it))
+                    if (_quadrantMap.TryGetFirstValue(hash, out var actor, out var it))
                     {
-                        continue;
+                        do
+                        {
+                            actors.Add(actor);
+                        }
+                        while (_quadrantMap.TryGetNextValue(out actor, ref it));
                     }
-
-                    do
-                    {
-                        actors.Add(data);
-                    } while (_quadrantMap.TryGetNextValue(out data, ref it));
                 }
 
                 uniqueHashes.Dispose();
@@ -89,14 +88,25 @@ namespace DoTs.Quadrants
 
             private NativeArray<float3> GeneratePointsOnTheLine(int count, float3 start, float3 finish)
             {
-                return new NativeArray<float3>(count, Allocator.Temp);
+                var seed = (uint) math.abs(math.ceil(start.x + finish.y)) + 10;
+                var random = new Random(seed);
+
+                var points = new NativeArray<float3>(count, Allocator.Temp);
+                for (var i = 0; i < count; i++)
+                {
+                    var distance = random.NextFloat();
+                    var point = math.lerp(start, finish, distance);
+                    points[i] = point;
+                }
+                
+                return points;
             }
 
             private NativeArray<float3> GeneratePointsInCircle(int count, float3 center, float radius)
             {
                 var points = new NativeArray<float3>(count, Allocator.Temp);
-                var seed = (uint) math.abs(math.ceil(center.x + center.y));
-                var random = new Random(seed != 0 ? seed : 100);
+                var seed = (uint) math.abs(math.ceil(center.x + center.y)) + 10;
+                var random = new Random(seed);
 
                 for (int i = 0; i < count; i++)
                 {
