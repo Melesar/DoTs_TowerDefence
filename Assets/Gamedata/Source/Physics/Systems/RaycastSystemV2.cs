@@ -27,8 +27,7 @@ namespace DoTs.Physics
                 [WriteOnly] ref RaycastResult result)
             {
                 var nearestAABB = new AABBData();
-                var minDistance = float.MaxValue;
-                var isFound = false;
+                var minDistance = float.PositiveInfinity;
                 var aabbs = quadrants.GetActorsAlongTheRay(t.Value, agent.direction, agent.maxDistance);
                 for (int i = 0; i < aabbs.Length; i++)
                 {
@@ -39,8 +38,8 @@ namespace DoTs.Physics
 
                     var isIntersection = bounds.IntersectRay(ray, out var distance);
                     var layersMatch = aabbData.layerMask.IsMatch(agent.layerMask);
-                    isFound |= isIntersection &&
-                               distance <= agent.maxDistance && //distance >= 0 &&
+                    var isFound = isIntersection &&
+                               distance <= agent.maxDistance && distance >= 0 &&
                                layersMatch;
                     
                     if (isFound && distance < minDistance)
@@ -50,7 +49,7 @@ namespace DoTs.Physics
                     }
                 }
 
-                if (isFound)
+                if (!float.IsPositiveInfinity(minDistance))
                 {
                     result.distance = minDistance;
                     result.entity = nearestAABB.entity;

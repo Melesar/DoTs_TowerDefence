@@ -62,7 +62,6 @@ namespace DoTs.Graphics
             return new SpriteSortingJob {inSprites = sprites}.Schedule();
         }
         
-        
         [BurstCompile]
         private struct SpriteSortingJob : IJob
         {
