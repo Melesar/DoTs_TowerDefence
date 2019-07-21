@@ -13,15 +13,16 @@ namespace DoTs
 {
     [UpdateInGroup(typeof(TurretsSystemGroup))]
     [UpdateAfter(typeof(TurretRotationSystem))]
-    public class TurretShootingSystem : ComponentSystem
+    public class TurretShootingSystem : JobComponentSystem
     {
         private ShellData _shellTemplate;
         private EndSimulationEntityCommandBufferSystem _commandBufferSystem;
+        private EntityQuery _query;
 
         [BurstCompile]
         private struct ReloadJob : IJobForEachWithEntity<TurretShooting, TurretAim, TargetOwnership>
         {
-            public NativeHashMap<int, float3>.Concurrent shellPositions;
+            public NativeArray<float3> shellPositions;
             public float delta;
             
             public void Execute(Entity entity, int index,
@@ -41,7 +42,7 @@ namespace DoTs
                 }
                 
                 //Shoot
-                shellPositions.TryAdd(index, target.targetPosition);
+                shellPositions[index] = target.targetPosition;
 
                 shooting.currentCooldownTime = shooting.totalCooldownTime;
             }
@@ -49,15 +50,14 @@ namespace DoTs
 
         private struct ShootJob : IJob
         {
-            [ReadOnly]
-            public NativeHashMap<int, float3> shellPositions;
+            [ReadOnly, DeallocateOnJobCompletion]
+            public NativeArray<float3> shellPositions;
             public EntityCommandBuffer commandBuffer;
             public ShellData shellTemplate;
             
             public void Execute()
             {
-                var positions = shellPositions.GetValueArray(Allocator.Temp);
-                foreach (var shellPosition in positions)
+                foreach (var shellPosition in shellPositions)
                 {
                     SpawnExplosion(shellPosition);
                 }
@@ -80,13 +80,14 @@ namespace DoTs
             }
         }
 
-        protected override void OnUpdate()
+        protected override JobHandle OnUpdate(JobHandle inputDeps)
         {
-            var shellsQueue = new NativeHashMap<int, float3>(10, Allocator.TempJob);
+            var count = _query.CalculateLength();
+            var shellsQueue = new NativeArray<float3>(count, Allocator.TempJob);
             var reloadJob = new ReloadJob
             {
                 delta = Time.deltaTime,
-                shellPositions = shellsQueue.ToConcurrent()
+                shellPositions = shellsQueue
             };
 
             var shootJob = new ShootJob
@@ -96,12 +97,12 @@ namespace DoTs
                 shellTemplate = _shellTemplate
             };
 
-            var handle = reloadJob.Schedule(this);
+            var handle = reloadJob.Schedule(_query);
             handle = shootJob.Schedule(handle);
 
-            handle.Complete();
-            
-            shellsQueue.Dispose();
+            _commandBufferSystem.AddJobHandleForProducer(handle);
+
+            return handle;
         }
         
         private struct ShellData
@@ -114,6 +115,7 @@ namespace DoTs
         protected override void OnCreate()
         {
             _commandBufferSystem = World.GetExistingSystem<EndSimulationEntityCommandBufferSystem>();
+            _query = GetEntityQuery(typeof(TurretAim), typeof(TurretShooting), typeof(TargetOwnership));
 
             SetShellData();
         }

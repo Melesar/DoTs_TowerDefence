@@ -15,7 +15,7 @@ namespace DoTs
         public static EntityArchetype ShellExplosion { get; private set; }
         
         
-        protected override void OnCreateManager()
+        protected override void OnCreate()
         {
             Enemy = EntityManager.CreateArchetype(
                 typeof (Enemy),
