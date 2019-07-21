@@ -91,7 +91,6 @@ namespace DoTs.Templates
                 sortingLayer = SortingLayer.Buildings,
                 sortingOrder = 1
             });
-            entityManager.SetComponentData(wallEntity, new Scale {Value = _scale});
             entityManager.SetComponentData(wallEntity, new Health
             {
                 value = 35f,
