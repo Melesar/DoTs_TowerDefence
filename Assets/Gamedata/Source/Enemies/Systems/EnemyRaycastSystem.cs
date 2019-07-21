@@ -9,6 +9,7 @@ using UnityEngine;
 
 namespace DoTs
 {
+    [UpdateInGroup(typeof(EnemiesSystemGroup))]
     public class EnemyRaycastSystem : JobComponentSystem
     {
         [BurstCompile]
@@ -31,6 +32,7 @@ namespace DoTs
         }
     }
     
+    [UpdateInGroup(typeof(EnemiesSystemGroup))]
     public class EnemyRaycastDebugSystem : ComponentSystem
     {
         protected override void OnUpdate()

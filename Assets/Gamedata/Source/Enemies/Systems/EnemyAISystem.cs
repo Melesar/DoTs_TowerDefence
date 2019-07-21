@@ -1,12 +1,21 @@
 using DoTs.Physics;
 using DoTs.Resources;
+using Unity.Collections;
 using Unity.Entities;
+using Unity.Jobs;
+using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
 
 namespace DoTs
 {
-    public class EnemyAISystem : ComponentSystem
+    public struct RaycastResultState : ISystemStateComponentData
+    {
+        public float raycastDistance;
+    }
+    
+    [UpdateInGroup(typeof(EnemiesSystemGroup))]
+    public class EnemyAISystem : JobComponentSystem
     {
         private readonly Movement _enemyMovement = new Movement {speed = 1f};
         private readonly EnemyAttack _enemyAttack = new EnemyAttack
@@ -14,48 +23,169 @@ namespace DoTs
             cooldown = 1f,
             damage = 3f,
         };
-        
-        protected override void OnUpdate()
+
+        private EntityQuery _updateQuery;
+        private EntityQuery _updateQueryNoState;
+        private EntityQuery _cleanupQuery;
+        private EntityCommandBufferSystem _commandBufferSystem;
+
+        private struct UpdateJob : IJobChunk
         {
-            Entities.WithAllReadOnly<AIAgent, Translation, RaycastResult, EnemyAttackRange>().ForEach(
-                (Entity e, ref Translation t, ref RaycastResult raycastResult, ref EnemyAttackRange attackRange) =>
+            public EnemyAttack attackTemplate;
+            public Movement movementTemplate;
+            
+            [ReadOnly] public ArchetypeChunkEntityType entityType;
+            [ReadOnly] public ArchetypeChunkComponentType<RaycastResult> raycastResultType;
+            [ReadOnly] public ArchetypeChunkComponentType<Movement> movementType;
+            [ReadOnly] public ArchetypeChunkComponentType<EnemyAttack> attackType;
+            
+            public ArchetypeChunkComponentType<RaycastResultState> raycastResultStateType;
+
+            public EntityCommandBuffer.Concurrent commands;
+
+            public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
+            {
+                if (chunk.Has(raycastResultStateType))
                 {
-                    if (raycastResult.IsHit() && raycastResult.distance <= attackRange.value)
+                    ProcessChunkWithState(chunk, chunkIndex);
+                }
+                else
+                {
+                    ProcessChunkWithoutState(chunk, chunkIndex);
+                }
+            }
+
+            private void ProcessChunkWithState(ArchetypeChunk chunk, int chunkIndex)
+            {
+                var entities = chunk.GetNativeArray(entityType);
+                var raycastResults = chunk.GetNativeArray(raycastResultType);
+                var raycastResultStates = chunk.GetNativeArray(raycastResultStateType);
+                for (int i = 0; i < chunk.Count; i++)
+                {
+                    var entity = entities[i];
+                    var raycastResult = raycastResults[i];
+                    var raycastResultState = raycastResultStates[i];
+                    if (!raycastResult.IsHit() && chunk.Has(attackType) && !chunk.Has(movementType))
                     {
-                        RemoveComponent<Movement>(e);
-                        UpdateComponent(e, new TargetOwnership
+                        commands.RemoveComponent<EnemyAttack>(chunkIndex, entity);
+                        commands.AddComponent(chunkIndex, entity, movementTemplate);
+                        commands.RemoveComponent<RaycastResultState>(chunkIndex, entity);
+                    }
+                    else if (!CompareDistance(raycastResult, raycastResultState))
+                    {
+                        commands.SetComponent(chunkIndex, entity, new TargetOwnership
                         {
                             targetEntity = raycastResult.entity,
                             targetPosition = raycastResult.position
                         });
-                        UpdateComponent(e, _enemyAttack);
                     }
-                    else
+                }
+            }
+
+            private void ProcessChunkWithoutState(ArchetypeChunk chunk, int chunkIndex)
+            {
+                var entities = chunk.GetNativeArray(entityType);
+                var raycastResults = chunk.GetNativeArray(raycastResultType);
+                for (int i = 0; i < chunk.Count; i++)
+                {
+                    var entity = entities[i];
+                    var raycastResult = raycastResults[i];
+                    if (raycastResult.IsHit() && chunk.Has(movementType) && !chunk.Has(attackType))
                     {
-                        RemoveComponent<EnemyAttack>(e);
-                        UpdateComponent(e, _enemyMovement);
+                        commands.RemoveComponent<Movement>(chunkIndex, entity);
+                        commands.AddComponent(chunkIndex, entity, attackTemplate);
+                        commands.SetComponent(chunkIndex, entity, new TargetOwnership
+                        {
+                            targetEntity = raycastResult.entity,
+                            targetPosition = raycastResult.position
+                        });
+                        commands.AddComponent(chunkIndex, entity, new RaycastResultState
+                        {
+                            raycastDistance = raycastResult.distance
+                        });
                     }
-                });
+                    else if (!chunk.Has(movementType))
+                    {
+                        commands.AddComponent(chunkIndex, entity, movementTemplate);
+                    }
+                }
+            }
+
+            private static bool CompareDistance(RaycastResult raycastResult, RaycastResultState raycastResultState)
+            {
+                return math.abs(raycastResult.distance - raycastResultState.raycastDistance) < 0.01f;
+            }
         }
 
-        private void UpdateComponent<T>(Entity e, T component) where T : struct, IComponentData
+        private struct CleanupJob : IJobForEachWithEntity<RaycastResultState>
         {
-            if (EntityManager.HasComponent<T>(e))
+            public EntityCommandBuffer.Concurrent commands;
+
+            public void Execute(Entity entity, int index, [ReadOnly] ref RaycastResultState agent)
             {
-                PostUpdateCommands.SetComponent(e, component);
-            }
-            else
-            {
-                PostUpdateCommands.AddComponent(e, component);
+                commands.RemoveComponent<RaycastResultState>(index, entity);
             }
         }
 
-        private void RemoveComponent<T>(Entity e) where T : struct, IComponentData
+
+        protected override JobHandle OnUpdate(JobHandle inputDeps)
         {
-            if (EntityManager.HasComponent<T>(e))
+            var commandBuffer = _commandBufferSystem.CreateCommandBuffer().ToConcurrent();
+            var updateJob = new UpdateJob
             {
-                PostUpdateCommands.RemoveComponent<T>(e);
-            }
+                attackTemplate = _enemyAttack,
+                movementTemplate = _enemyMovement,
+                entityType = GetArchetypeChunkEntityType(),
+                raycastResultStateType = GetArchetypeChunkComponentType<RaycastResultState>(false),
+                raycastResultType = GetArchetypeChunkComponentType<RaycastResult>(true),
+                movementType = GetArchetypeChunkComponentType<Movement>(true),
+                attackType = GetArchetypeChunkComponentType<EnemyAttack>(true),
+                commands = commandBuffer
+            };
+
+            var cleanupJob = new CleanupJob
+            {
+                commands = commandBuffer
+            };
+
+            inputDeps = updateJob.Schedule(_updateQuery, inputDeps);
+            inputDeps = updateJob.Schedule(_updateQueryNoState, inputDeps);
+            inputDeps = cleanupJob.Schedule(_cleanupQuery, inputDeps);
+            
+            _commandBufferSystem.AddJobHandleForProducer(inputDeps);
+            
+            return inputDeps;
+        }
+
+        protected override void OnCreate()
+        {
+            _updateQuery = GetEntityQuery(
+                new EntityQueryDesc
+                {
+                    All = new[]
+                    {
+                        ComponentType.ReadOnly<AIAgent>(), ComponentType.ReadOnly<RaycastResult>(),
+                        typeof(TargetOwnership)
+                    },
+                    None = new[] {ComponentType.ReadWrite<RaycastResultState>()}
+                }
+            );
+            
+            _updateQueryNoState = GetEntityQuery(
+                new EntityQueryDesc
+                {
+                    All = new[]
+                    {
+                        ComponentType.ReadOnly<AIAgent>(), ComponentType.ReadOnly<RaycastResult>(),
+                        typeof(TargetOwnership), ComponentType.ReadWrite<RaycastResultState>(), 
+                    },
+                }
+            );
+
+            _cleanupQuery = GetEntityQuery(ComponentType.ReadOnly<RaycastResultState>(),
+                ComponentType.Exclude<AIAgent>());
+
+            _commandBufferSystem = World.GetExistingSystem<EndSimulationEntityCommandBufferSystem>();
         }
     }
 }

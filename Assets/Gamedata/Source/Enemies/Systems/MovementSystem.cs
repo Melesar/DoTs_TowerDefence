@@ -9,7 +9,7 @@ using UnityEngine;
 
 namespace DoTs
 {
-    [UpdateBefore(typeof(SpriteAnimationSystem))]
+    [UpdateInGroup(typeof(EnemiesSystemGroup))]
     public class MovementSystem : JobComponentSystem
     {
         [BurstCompile]

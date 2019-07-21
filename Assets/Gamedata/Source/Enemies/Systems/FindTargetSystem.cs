@@ -7,6 +7,7 @@ using Unity.Transforms;
 
 namespace DoTs
 {
+    [UpdateInGroup(typeof(EnemiesSystemGroup))]
     public class FindTargetSystem : ComponentSystem
     {
         private EntityQuery _targetsQuery;

@@ -3,6 +3,7 @@ using UnityEngine;
 
 namespace DoTs
 {
+    [UpdateInGroup(typeof(EnemiesSystemGroup))]
     public class EnemyAttackSystem : ComponentSystem
     {
         protected override void OnUpdate()
