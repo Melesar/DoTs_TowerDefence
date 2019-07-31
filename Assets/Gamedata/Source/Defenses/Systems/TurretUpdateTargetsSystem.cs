@@ -15,7 +15,7 @@ namespace DoTs
                 {
                     PostUpdateCommands.RemoveComponent<TargetOwnership>(e);
                 }
-                else
+                else if (EntityManager.HasComponent<Translation>(target.targetEntity))
                 {
                     target.targetPosition = EntityManager.GetComponentData<Translation>(target.targetEntity).Value;
                 }

@@ -24,7 +24,6 @@ namespace DoTs
 
             public void Execute(Entity entity, int index, [ReadOnly] ref Translation translation, [ReadOnly] ref TurretAim aim)
             {
-                //TODO Try moving searching for enemies and sorting into different Burst compiled job
                 using (var enemiesInRadius = quadrantsAccess.GetActorsWithinRadius(translation.Value, aim.aimRange, Allocator.Temp))
                 {
                     if (enemiesInRadius.Length == 0)
@@ -53,13 +52,6 @@ namespace DoTs
                         targetPosition = nearestEnemy.position
                     });
                 }
-            }
-            
-            private static bool CheckDistance(EnemyData enemyData, float3 position, float radius)
-            {
-                var enemyPosition = enemyData.position;
-                var distanceSqr = math.distancesq(enemyPosition, position);
-                return distanceSqr <= radius * radius;
             }
             
             private static void QuickSort(float3 position, NativeList<EnemyData> arr, int startIndex, int endIndex) 
@@ -137,6 +129,18 @@ namespace DoTs
             }
         }
         
+        private struct CheckDistanceToTargetJob : IJobForEachWithEntity<TargetOwnership, TurretAim, Translation>
+        {
+            public EntityCommandBuffer.Concurrent commands;
+            
+            public void Execute(Entity entity, int index, ref TargetOwnership target, [ReadOnly] ref TurretAim aim, [ReadOnly] ref Translation t)
+            {
+                if (!CheckDistance(new EnemyData {position = target.targetPosition}, t.Value, aim.aimRange))
+                {
+                    commands.RemoveComponent<TargetOwnership>(index, entity);
+                }
+            }
+        }
         
         [BurstCompile]
         [RequireComponentTag(typeof(TargetOwnership))]
@@ -163,10 +167,12 @@ namespace DoTs
                 quadrantsAccess = _quadrantsSystem.GetQuadrantAccess()
             };
 
+            var checkDistanceJob = new CheckDistanceToTargetJob {commands = _commandsSystem.CreateCommandBuffer().ToConcurrent()};
             var rotateJob = new RotateTowardsTargetJob();
             var updateAimJob = new UpdateAimStatusJob();
             
             inputDeps = findTargetJob.Schedule(this, inputDeps);
+            inputDeps = checkDistanceJob.Schedule(this, inputDeps);
             inputDeps = rotateJob.Schedule(this, inputDeps);
             inputDeps = updateAimJob.Schedule(this, inputDeps);
 
@@ -179,6 +185,13 @@ namespace DoTs
         {
             _quadrantsSystem = World.GetExistingSystem<EnemiesQuadrantSystem>();
             _commandsSystem = World.GetExistingSystem<EndSimulationEntityCommandBufferSystem>();
+        }
+        
+        private static bool CheckDistance(EnemyData enemyData, float3 position, float radius)
+        {
+            var enemyPosition = enemyData.position;
+            var distanceSqr = math.distancesq(enemyPosition, position);
+            return distanceSqr <= radius * radius;
         }
     }
 }
