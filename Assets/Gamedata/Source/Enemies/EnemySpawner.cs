@@ -23,7 +23,10 @@ namespace DoTs
         private float _spawnInterval = 1.5f;
         [SerializeField]
         private int _spawnBatchSize = 2;
+
+        private readonly bool _spawnOne = false;
         
+        private bool _hasSpawned;
         private float _spawnTime;
         private AnimationSequence _animationSequence;
 
@@ -36,7 +39,10 @@ namespace DoTs
             }
 
             _spawnTime -= _spawnInterval;
-            SpawnEnemies();
+            if (!_spawnOne || !_hasSpawned)
+            {
+                SpawnEnemies();
+            }
         }
 
         private void SpawnEnemies()
@@ -72,6 +78,8 @@ namespace DoTs
                     _entityManager.SetComponentData(enemy, new AABB{extents = 0.15f});
                     _entityManager.SetComponentData(enemy, LayerMask.Create(Layer.Enemy));
                     _entityManager.SetComponentData(enemy, new EnemyAttackRange {value = 0.5f});
+
+                    _hasSpawned = true;
                 }
             }
         }
@@ -80,6 +88,11 @@ namespace DoTs
         {
             var animationDataProvider = ResourceLocator<AnimationDataProvider>.GetResourceProvider();
             _animationSequence = animationDataProvider.GetAnimationSequence(AnimationEntityType.Enemy);
+
+            if (_spawnOne)
+            {
+                _spawnBatchSize = 1;
+            }
         }
     }
 }

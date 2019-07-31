@@ -14,7 +14,7 @@ namespace DoTs
     [UpdateInGroup(typeof(EnemiesSystemGroup))]
     public class EnemyAISystem : JobComponentSystem
     {
-        private readonly Movement _enemyMovement = new Movement {speed = 1f};
+        private readonly Movement _enemyMovement = new Movement {speed = 3f};
         private readonly EnemyAttack _enemyAttack = new EnemyAttack
         {
             cooldown = 1f,
@@ -36,6 +36,7 @@ namespace DoTs
             [ReadOnly] public ArchetypeChunkComponentType<Movement> movementType;
             [ReadOnly] public ArchetypeChunkComponentType<EnemyAttack> attackType;
             
+            public ArchetypeChunkComponentType<TargetOwnership> targetType;
             public ArchetypeChunkComponentType<RaycastResultState> raycastResultStateType;
 
             public EntityCommandBuffer.Concurrent commands;
@@ -67,8 +68,12 @@ namespace DoTs
                         commands.RemoveComponent<EnemyAttack>(chunkIndex, entity);
                         commands.AddComponent(chunkIndex, entity, movementTemplate);
                         commands.RemoveComponent<RaycastResultState>(chunkIndex, entity);
+                        if (chunk.Has(targetType))
+                        {
+                            commands.RemoveComponent<TargetOwnership>(chunkIndex, entity);
+                        }
                     }
-                    else if (!CompareDistance(raycastResult, raycastResultState))
+                    else if (!CompareDistance(raycastResult, raycastResultState) && chunk.Has(targetType))
                     {
                         commands.SetComponent(chunkIndex, entity, new TargetOwnership
                         {
@@ -91,11 +96,19 @@ namespace DoTs
                     {
                         commands.RemoveComponent<Movement>(chunkIndex, entity);
                         commands.AddComponent(chunkIndex, entity, attackTemplate);
-                        commands.SetComponent(chunkIndex, entity, new TargetOwnership
+                        var targetOwnership = new TargetOwnership
                         {
                             targetEntity = raycastResult.entity,
                             targetPosition = raycastResult.position
-                        });
+                        };
+                        if (chunk.Has(targetType))
+                        {
+                            commands.SetComponent(chunkIndex, entity, targetOwnership);
+                        }
+                        else
+                        {
+                            commands.AddComponent(chunkIndex, entity, targetOwnership); 
+                        }
                         commands.AddComponent(chunkIndex, entity, new RaycastResultState
                         {
                             raycastDistance = raycastResult.distance
@@ -137,6 +150,7 @@ namespace DoTs
                 raycastResultType = GetArchetypeChunkComponentType<RaycastResult>(true),
                 movementType = GetArchetypeChunkComponentType<Movement>(true),
                 attackType = GetArchetypeChunkComponentType<EnemyAttack>(true),
+                targetType = GetArchetypeChunkComponentType<TargetOwnership>(false),
                 commands = commandBuffer
             };
 
@@ -161,8 +175,7 @@ namespace DoTs
                 {
                     All = new[]
                     {
-                        ComponentType.ReadOnly<AIAgent>(), ComponentType.ReadOnly<RaycastResult>(),
-                        typeof(TargetOwnership)
+                        ComponentType.ReadOnly<AIAgent>(), ComponentType.ReadOnly<RaycastResult>()
                     },
                     None = new[] {ComponentType.ReadWrite<RaycastResultState>()}
                 }
@@ -173,8 +186,7 @@ namespace DoTs
                 {
                     All = new[]
                     {
-                        ComponentType.ReadOnly<AIAgent>(), ComponentType.ReadOnly<RaycastResult>(),
-                        typeof(TargetOwnership), ComponentType.ReadWrite<RaycastResultState>(), 
+                        ComponentType.ReadOnly<AIAgent>(), ComponentType.ReadOnly<RaycastResult>(), ComponentType.ReadWrite<RaycastResultState>(), 
                     },
                 }
             );

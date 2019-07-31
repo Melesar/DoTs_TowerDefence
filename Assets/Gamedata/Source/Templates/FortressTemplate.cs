@@ -71,6 +71,7 @@ namespace DoTs.Templates
             
             entityManager.SetComponentData(turretEntity, new AABB {extents = 0.45f});
             entityManager.SetComponentData(turretEntity, LayerMask.Create(Layer.Building));
+            entityManager.SetComponentData(turretEntity, new Health {value = float.MaxValue, maxValue = float.MaxValue});
         }
 
         private void CreateWall(EntityManager entityManager, Vector3 position, GameObject wall)

@@ -30,7 +30,8 @@ namespace DoTs
                 typeof(RaycastAgent),
                 typeof(RaycastResult),
                 typeof(LayerMask),
-                typeof(EnemyAttackRange)
+                typeof(EnemyAttackRange),
+                typeof(PathIndex)
             );
             
             MainTurret = EntityManager.CreateArchetype(
@@ -44,7 +45,8 @@ namespace DoTs
                 typeof(Target),
                 typeof(AABB),
                 typeof(PhysicsStatic),
-                typeof(LayerMask)
+                typeof(LayerMask),
+                typeof(Health)
             );
             
             Wall = EntityManager.CreateArchetype(
